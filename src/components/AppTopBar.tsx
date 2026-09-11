@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Home, Settings, LogOut, User, ChevronDown, Users, FolderOpen, Building2 } from 'lucide-react';
+import { Settings, LogOut, User, ChevronDown, Building2, ClipboardList, TrendingUp } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { Logo } from '@/components/Logo';
 import {
@@ -17,6 +17,11 @@ interface AppTopBarProps {
   avatarUrl?: string | null;
 }
 
+const goToTab = (navigate: ReturnType<typeof useNavigate>, tab: string) => {
+  sessionStorage.setItem('admin_active_tab', tab);
+  navigate('/admin', { state: { activeTab: tab } });
+};
+
 export function AppTopBar({ onOpenSettings, showLogo = true, userName, avatarUrl }: AppTopBarProps) {
   const { signOut } = useAuth();
   const navigate = useNavigate();
@@ -26,49 +31,32 @@ export function AppTopBar({ onOpenSettings, showLogo = true, userName, avatarUrl
     navigate('/auth');
   };
 
+  const navButton = 'flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors px-2.5 py-1.5 rounded-lg hover:bg-secondary/50';
+
   return (
     <div className="sticky top-0 z-50 w-full border-b border-border/30 bg-background/80 backdrop-blur-xl">
       <div className="max-w-7xl mx-auto flex items-center justify-between h-12 px-4 sm:px-6">
-        {/* Left: Logo / Home */}
+        {/* Left: Logo / navigation */}
         <div className="flex items-center gap-3">
           {showLogo && (
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/admin')}
               className="flex items-center gap-2 hover:opacity-80 transition-opacity"
             >
-              <Logo size="sm" />
+              <Logo size="sm" linkTo="/admin" />
             </button>
           )}
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors px-2.5 py-1.5 rounded-lg hover:bg-secondary/50"
-          >
-            <Home className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Dashboard</span>
-          </button>
-          <button
-            onClick={() => {
-              sessionStorage.setItem('admin_active_tab', 'projects');
-              navigate('/admin');
-            }}
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors px-2.5 py-1.5 rounded-lg hover:bg-secondary/50"
-          >
-            <FolderOpen className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Projects</span>
-          </button>
-          <button
-            onClick={() => navigate('/admin')}
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors px-2.5 py-1.5 rounded-lg hover:bg-secondary/50"
-          >
+          <button onClick={() => goToTab(navigate, 'team')} className={navButton}>
             <Building2 className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">My Organization</span>
           </button>
-          <button
-            onClick={() => navigate('/connect')}
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors px-2.5 py-1.5 rounded-lg hover:bg-secondary/50"
-          >
-            <Users className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Connect</span>
+          <button onClick={() => goToTab(navigate, 'my-assignments')} className={navButton}>
+            <ClipboardList className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">My Life</span>
+          </button>
+          <button onClick={() => goToTab(navigate, 'deals')} className={navButton}>
+            <TrendingUp className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Sales Leads</span>
           </button>
         </div>
 
@@ -100,9 +88,9 @@ export function AppTopBar({ onOpenSettings, showLogo = true, userName, avatarUrl
                 Profile Settings
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem onClick={() => navigate('/dashboard')}>
-              <Home className="w-4 h-4 mr-2" />
-              Back to Dashboard
+            <DropdownMenuItem onClick={() => navigate('/admin')}>
+              <Building2 className="w-4 h-4 mr-2" />
+              My Organization
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">

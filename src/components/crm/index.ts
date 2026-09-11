@@ -17,3 +17,4 @@ export { NotificationBell } from './NotificationBell';
 export { MentionInput } from './MentionInput';
 export { InlineTypeBadge, InlineLeadStatus, InlineTags } from './InlineContactLabels';
 export { MonthlyLeadTracker } from './MonthlyLeadTracker';
+export { DealTable } from './DealTable';

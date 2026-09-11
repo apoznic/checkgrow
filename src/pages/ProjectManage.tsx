@@ -306,7 +306,7 @@ export default function ProjectManage() {
     if (project?.cluster_id) {
       navigate('/admin', { state: { activeTab: 'projects' } });
     } else {
-      navigate('/my-projects');
+      navigate('/admin');
     }
   };
 

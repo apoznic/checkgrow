@@ -84,13 +84,7 @@ export default function Landing() {
                     <button className="w-full sm:w-auto px-7 h-14 sm:h-12 bg-foreground text-background rounded-full font-semibold text-base sm:text-sm inline-flex items-center justify-center gap-2 active:scale-[0.98] sm:hover:scale-[1.03] transition-transform">
                       Get started <ArrowRight className="w-4 h-4" />
                     </button>
-                  </Link>
-                  <Link to="/demo" className="w-full sm:w-auto">
-                    <button className="w-full sm:w-auto px-7 h-14 sm:h-12 bg-background/70 backdrop-blur-sm border border-foreground/15 text-foreground rounded-full font-semibold text-base sm:text-sm hover:bg-background transition-colors">
-                      Try the live demo
-                    </button>
-                  </Link>
-                </div>
+                  </Link>                </div>
               </div>
             </motion.div>
           </main>
@@ -100,7 +94,6 @@ export default function Landing() {
             <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
               <p className="text-xs text-foreground/50 order-2 sm:order-1">© 2026 CheckGrow</p>
               <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 order-1 sm:order-2">
-                <Link to="/demo" className="text-xs text-foreground/50 hover:text-foreground transition-colors">Demo</Link>
                 <Link to="/privacy" className="text-xs text-foreground/50 hover:text-foreground transition-colors">Privacy</Link>
                 <Link to="/terms" className="text-xs text-foreground/50 hover:text-foreground transition-colors">Terms</Link>
                 <a href="mailto:info@checkgrow.com" className="text-xs text-foreground/50 hover:text-foreground transition-colors">Contact</a>

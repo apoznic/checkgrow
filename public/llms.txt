@@ -1,18 +1,14 @@
 # CheckGrow
 
-> AI-powered talent matching and team formation platform. Build your swarm — connect professionals, organizations, and projects through intelligent skill matching, integrated CRM, and collaborative project management.
+> AI-assisted organization workspace: members, tasks, sales leads, registries, and newsletters.
 
-CheckGrow ("CheckGrow") is an OS for distributed teams and agencies. It uses AI to match supply (talent) with demand (projects), manages the full lifecycle from lead to delivery, and provides shared CRM, calendars, and project workspaces across organizations ("organizations").
+CheckGrow is an operating system for small teams and agencies. Every organization gets a members board with per-person tasks, a private My Life workspace for each member, a sales-lead CRM with kanban and table views, spreadsheet-style registries, and newsletter and task-reminder emails.
 
 ## Pages
 
-- [Home](/): Overview, value proposition, and entry point.
-- [Demo](/demo): Interactive product walkthrough — demand agent, supply agent, and CRM.
-- [Sign in / Sign up](/auth): Authentication entry for talent and organizations.
+- [Home](/): Product landing page.
+- [Sign in](/auth): Log in or create an account.
+- [Organization workspace](/admin): Members board, My Life, Sales Leads, Members & Skills, Newsletter, Resources, Contacts, Registry, and Settings.
 - [Join an Organization](/join-kolektiv): Discover and request membership in organizations.
-- [Pitch](/pitch): Investor pitch deck and CheckGrow engine overview.
-
-## Optional
-
 - [Privacy Policy](/privacy): How CheckGrow collects, uses, and protects user data.
-- [Terms of Use](/terms): Platform terms and acceptable use.
+- [Terms of Use](/terms): Terms governing use of the platform.

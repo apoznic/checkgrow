@@ -3,12 +3,23 @@ import {
   Plus, Trash2, Loader2, Link2, CalendarClock,
   ExternalLink, Lock, Circle, Clock, CheckCircle2, CalendarPlus,
   Pencil, Check, X, FolderPlus, Folder, ChevronDown, ChevronRight,
-  Archive, ArchiveRestore, Briefcase, ArrowUpRight, AlertCircle
+  Archive, ArchiveRestore, Briefcase, ArrowUpRight, AlertCircle, Users
 } from 'lucide-react';
 import { Link as RouterLink } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format, isPast, isToday, isTomorrow } from 'date-fns';
+
+interface TeamTask {
+  id: string;
+  title: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  priority: string | null;
+  due_date: string | null;
+  cluster_id: string;
+  created_by: string;
+  clusters?: { id: string; name: string } | null;
+}
 
 interface MyAssignmentsProps {
   clusterId: string;
@@ -90,6 +101,8 @@ export function MyAssignments({ profileId }: MyAssignmentsProps) {
     project: { id: string; title: string; cluster_id: string | null } | null;
   }>>([]);
 
+  const [teamTasks, setTeamTasks] = useState<TeamTask[]>([]);
+
   // Forms
   const [newTask, setNewTask] = useState({ title: '', priority: 'medium' as PrivateTask['priority'], due_date: '' });
   const [newLink, setNewLink] = useState({ title: '', url: '', description: '', group_id: '' as string | '' });
@@ -99,7 +112,7 @@ export function MyAssignments({ profileId }: MyAssignmentsProps) {
 
   const loadAll = async () => {
     setIsLoading(true);
-    await Promise.all([loadTasks(), loadLinks(), loadLinkGroups(), loadMeetings(), loadProjectTasks()]);
+    await Promise.all([loadTasks(), loadLinks(), loadLinkGroups(), loadMeetings(), loadProjectTasks(), loadTeamTasks()]);
     setIsLoading(false);
   };
 
@@ -124,6 +137,29 @@ export function MyAssignments({ profileId }: MyAssignmentsProps) {
   const updateProjectTaskStatus = async (id: string, status: string) => {
     setProjectTasks(prev => prev.map(t => t.id === id ? { ...t, status } : t));
     await (supabase as any).from('project_tasks').update({ status }).eq('id', id);
+  };
+
+  // Tasks assigned to me from the Members board (crm_tasks)
+  const loadTeamTasks = async () => {
+    const { data, error } = await (supabase as any)
+      .from('crm_tasks')
+      .select('id, title, status, priority, due_date, cluster_id, created_by, clusters(id, name)')
+      .eq('assigned_to', profileId)
+      .in('status', ['pending', 'in_progress'])
+      .order('due_date', { ascending: true, nullsFirst: false });
+
+    if (error) {
+      toast({ title: 'Could not load team tasks', description: error.message, variant: 'destructive' });
+      setTeamTasks([]);
+      return;
+    }
+    setTeamTasks((data || []) as TeamTask[]);
+  };
+
+  const updateTeamTaskStatus = async (id: string, status: TeamTask['status']) => {
+    const completed_at = status === 'completed' ? new Date().toISOString() : null;
+    setTeamTasks(prev => status === 'completed' ? prev.filter(t => t.id !== id) : prev.map(t => t.id === id ? { ...t, status } : t));
+    await (supabase as any).from('crm_tasks').update({ status, completed_at }).eq('id', id);
   };
 
   const loadTasks = async () => {
@@ -1003,6 +1039,59 @@ export function MyAssignments({ profileId }: MyAssignmentsProps) {
           </div>
         </section>
       </div>
+      {/* TASKS ASSIGNED TO ME FROM THE MEMBERS BOARD */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+            <Users className="w-3.5 h-3.5" /> Assigned to me by the team
+          </h3>
+          <span className="text-[11px] text-muted-foreground">{teamTasks.length} open</span>
+        </div>
+        {teamTasks.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-border/40 p-6 text-center">
+            <p className="text-xs text-muted-foreground">Nothing assigned to you from the Members board yet.</p>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-border/40 bg-card overflow-hidden divide-y divide-border/30">
+            {teamTasks.map(task => {
+              const due = getDueLabel(task.due_date);
+              const inProgress = task.status === 'in_progress';
+              const StatusIcon = inProgress ? Clock : Circle;
+              const priorityClass = task.priority === 'high'
+                ? 'bg-destructive/10 text-destructive border-destructive/20'
+                : task.priority === 'medium'
+                ? 'bg-amber-500/10 text-amber-600 border-amber-500/20'
+                : 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20';
+              const dueClass = due?.urgent ? 'bg-destructive/10 text-destructive' : 'bg-secondary text-muted-foreground';
+              return (
+                <div key={task.id} className="group px-4 py-2.5 flex items-center gap-3 hover:bg-secondary/20 transition">
+                  <button
+                    onClick={() => updateTeamTaskStatus(task.id, inProgress ? 'completed' : 'in_progress')}
+                    className="shrink-0"
+                    title={inProgress ? 'In Progress — click to complete' : 'To Do — click to start'}
+                  >
+                    <StatusIcon className={inProgress ? 'w-4 h-4 text-amber-500' : 'w-4 h-4 text-muted-foreground'} />
+                  </button>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm leading-snug truncate">{task.title}</p>
+                    <p className="text-[10px] text-muted-foreground truncate">{task.clusters?.name || 'Organization'}</p>
+                  </div>
+                  {task.priority && (
+                    <span className={'text-[10px] font-semibold px-1.5 py-0.5 rounded-md border shrink-0 ' + priorityClass}>{task.priority}</span>
+                  )}
+                  {due && (
+                    <span className={'text-[10px] font-medium px-1.5 py-0.5 rounded-md inline-flex items-center gap-1 shrink-0 ' + dueClass}>
+                      {due.urgent && <AlertCircle className="w-2.5 h-2.5" />}
+                      {due.text}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
       {/* PROJECT TASKS ASSIGNED TO ME — grouped by project, at the bottom */}
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -1116,11 +1205,12 @@ export function useAssignmentCounts(clusterId: string | null, profileId: string 
   useEffect(() => {
     if (!profileId) return;
     const load = async () => {
-      const [tasksRes, meetingsRes] = await Promise.all([
+      const [tasksRes, meetingsRes, teamRes] = await Promise.all([
         (supabase as any).from('private_tasks').select('id', { count: 'exact', head: true }).eq('profile_id', profileId).neq('status', 'done').eq('archived', false),
         (supabase as any).from('private_meetings').select('id', { count: 'exact', head: true }).eq('profile_id', profileId).gte('meeting_at', new Date().toISOString()),
+        (supabase as any).from('crm_tasks').select('id', { count: 'exact', head: true }).eq('assigned_to', profileId).in('status', ['pending', 'in_progress']),
       ]);
-      setCount((tasksRes.count || 0) + (meetingsRes.count || 0));
+      setCount((tasksRes.count || 0) + (meetingsRes.count || 0) + (teamRes.count || 0));
     };
     load();
   }, [clusterId, profileId]);

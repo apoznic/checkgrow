@@ -23,7 +23,7 @@ const PERMISSIONS = [
   { key: 'tab_members', label: 'Members & Skills', section: 'General Tabs', description: 'View member list and skills' },
   { key: 'tab_announcements', label: 'Announcements', section: 'General Tabs', description: 'Organization announcements' },
   { key: 'tab_resources', label: 'Resources', section: 'General Tabs', description: 'Shared documents and links' },
-  { key: 'tab_projects', label: 'Projects', section: 'General Tabs', description: 'Project management' },
+  { key: 'tab_projects', label: 'Projects (legacy)', section: 'General Tabs', description: 'Legacy project boards; the Members board is visible to everyone' },
 
   // CRM Tabs
   { key: 'tab_contacts_book', label: 'Contacts', section: 'CRM Tabs', description: 'General contact directory' },

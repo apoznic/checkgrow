@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus, DollarSign, Calendar, User, ChevronRight, 
   MoreVertical, Edit, Trash2, Loader2, X, TrendingUp, 
-  LayoutGrid, List, Search, Users, Trophy, Rocket,
+  LayoutGrid, List, Search, Users, Trophy, Rocket, Table2,
   Check, ArrowRight, ArrowLeft, FolderOpen, PartyPopper,
   MessageSquare, Send, Archive
 } from 'lucide-react';
@@ -16,6 +16,7 @@ import { CRMDeal, DealStage, CRMContact } from './types';
 import { MentionInput } from './MentionInput';
 import { DealMembersModal } from './DealMembersModal';
 import { DealDetailModal } from './DealDetailModal';
+import { DealTable } from './DealTable';
 import { FindersFeeLeaderboard } from './FindersFeeLeaderboard';
 import { ProjectCompensationLeaderboard } from './ProjectCompensationLeaderboard';
 import { MonthlyCompensationDashboard } from './MonthlyCompensationDashboard';
@@ -79,7 +80,8 @@ export function DealList({ clusterId, profileId, canManage, userRole, showFinder
   const [showModal, setShowModal] = useState(false);
   const [editingDeal, setEditingDeal] = useState<CRMDeal | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('kanban');
+  const [viewMode, setViewMode] = useState<'list' | 'kanban' | 'table'>(() => (localStorage.getItem('deals_view_mode') as 'list' | 'kanban' | 'table') || 'kanban');
+  useEffect(() => { localStorage.setItem('deals_view_mode', viewMode); }, [viewMode]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStage, setFilterStage] = useState<DealStage | 'all'>('all');
   const [showArchive, setShowArchive] = useState(false);
@@ -712,6 +714,14 @@ export function DealList({ clusterId, profileId, canManage, userRole, showFinder
             {showArchive ? `Archive (${archivedDeals.length})` : `Archive${archivedDeals.length ? ` (${archivedDeals.length})` : ''}`}
           </GlassButtonNew>
           <GlassButtonNew
+            variant={viewMode === 'table' ? 'primary' : 'ghost'}
+            size="icon"
+            onClick={() => setViewMode('table')}
+            title="Table view"
+          >
+            <Table2 className="w-4 h-4" />
+          </GlassButtonNew>
+          <GlassButtonNew
             variant={viewMode === 'list' ? 'primary' : 'ghost'}
             size="icon"
             onClick={() => setViewMode('list')}
@@ -801,7 +811,17 @@ export function DealList({ clusterId, profileId, canManage, userRole, showFinder
       )}
 
       {/* Content */}
-      {viewMode === 'list' ? (
+      {viewMode === 'table' ? (
+        <DealTable
+          deals={filteredDeals}
+          stages={allStages}
+          canManage={canManage}
+          onOpen={deal => setDetailDeal(deal)}
+          onEdit={openEdit}
+          onDelete={handleDelete}
+          onStageChange={handleStageChange}
+        />
+      ) : viewMode === 'list' ? (
         <div className="space-y-2">
           {filteredDeals.length === 0 ? (
             <div className="glass-panel p-12 text-center">

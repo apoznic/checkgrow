@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LogOut, Users, Building2, Loader2, Plus, Home,
-  Megaphone, FileText, FolderOpen, UserCircle, TrendingUp,
+  Megaphone, FileText, UserCircle, TrendingUp,
   ChevronRight, Settings, Menu, X, Shield, Linkedin, Bell, ClipboardList, Plug, Sparkles, Database
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -18,7 +18,7 @@ import { OrgMembers } from '@/components/organization/OrgMembers';
 import { MemberSkillsView } from '@/components/organization/MemberSkillsView';
 import { OrgAnnouncements } from '@/components/organization/OrgAnnouncements';
 import { OrgResources } from '@/components/organization/OrgResources';
-import { OrgProjects } from '@/components/organization/OrgProjects';
+import { MemberTaskBoard } from '@/components/organization/MemberTaskBoard';
 import { OrgSettings } from '@/components/organization/OrgSettings';
 import { OrgIntegrations } from '@/components/organization/OrgIntegrations';
 import { RolePermissions } from '@/components/organization/RolePermissions';
@@ -45,7 +45,7 @@ interface Cluster {
   category: string | null;
 }
 
-type Tab = 'overview' | 'my-assignments' | 'members' | 'announcements' | 'resources' | 'projects' | 'contacts' | 'contacts_book' | 'deals' | 'settings' | 'permissions' | 'integrations' | 'registry';
+type Tab = 'overview' | 'my-assignments' | 'members' | 'announcements' | 'resources' | 'team' | 'contacts' | 'contacts_book' | 'deals' | 'settings' | 'permissions' | 'integrations' | 'registry';
 
 const normalizeRole = (role?: string | null) => (role || 'member').trim().toLowerCase();
 
@@ -65,9 +65,9 @@ export default function AdminDashboard() {
   const [clusterRoles, setClusterRoles] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState<Tab>(() => {
     const saved = sessionStorage.getItem('admin_active_tab');
-    // Override legacy 'overview' default with 'projects'
-    if (saved === 'overview') return 'projects';
-    return (saved as Tab) || 'projects';
+    // Legacy defaults (overview, projects) now land on the Members board
+    if (saved === 'overview' || saved === 'projects') return 'team';
+    return (saved as Tab) || 'team';
   });
   const [deepLinkItemId, setDeepLinkItemId] = useState<string | null>(null);
   const [profileId, setProfileId] = useState<string | null>(null);
@@ -369,7 +369,7 @@ export default function AdminDashboard() {
   const selectCluster = (clusterId: string) => {
     setSelectedCluster(clusterId);
     setSelectedRole(normalizeRole(clusterRoles[clusterId] || 'member'));
-    setActiveTab('projects');
+    setActiveTab('team');
   };
 
   const canManageMembers = effectiveRole === 'owner' || hasPermission('action_manage_members');
@@ -388,7 +388,7 @@ export default function AdminDashboard() {
   const currentCluster = allClusters.find(c => c.cluster.id === selectedCluster);
 
   const tabs: { id: Tab; label: string; icon: React.ElementType; section?: string; badge?: number; hidden?: boolean; glow?: boolean; highlight?: boolean }[] = [
-    { id: 'projects', label: 'Projects', icon: FolderOpen, section: 'Workspace', hidden: !hasPermission('tab_projects'), highlight: true },
+    { id: 'team', label: 'Members', icon: Users, section: 'Workspace', highlight: true },
     { id: 'my-assignments', label: 'My Life', icon: ClipboardList, section: 'Workspace', badge: assignmentCount > 0 ? assignmentCount : undefined, glow: assignmentCount > 0, highlight: true },
     { id: 'deals', label: 'Sales Leads', icon: TrendingUp, section: 'Workspace', hidden: !hasPermission('tab_deals'), highlight: true },
     { id: 'members', label: 'Members & Skills', icon: Users, section: 'General', badge: canManageMembers && stats.pending > 0 ? stats.pending : undefined, hidden: !hasPermission('tab_members') },
@@ -426,8 +426,8 @@ export default function AdminDashboard() {
         return <OrgAnnouncements clusterId={selectedCluster} canManage={canManageAnnouncements} profileId={profileId} isOwner={effectiveRole === 'owner'} />;
       case 'resources':
         return <OrgResources clusterId={selectedCluster} canManage={canManageContent} profileId={profileId} />;
-      case 'projects':
-        return <OrgProjects clusterId={selectedCluster} canView={true} canManage={canManageProjects} profileId={profileId} userRole={selectedRole} canEnterAnyProject={hasPermission('action_enter_any_project')} canApplyToProjects={hasPermission('action_apply_to_projects')} canDeleteProjects={hasPermission('action_delete_projects')} canViewInboundProjects={hasPermission('action_view_inbound_projects')} canManageProjectTeams={hasPermission('action_manage_project_teams')} />;
+      case 'team':
+        return <MemberTaskBoard clusterId={selectedCluster} profileId={profileId} canManage={canManageContent} />;
       case 'contacts_book':
         return <CRMContactsBook clusterId={selectedCluster} profileId={profileId} canManage={canManageContent} userRole={selectedRole} />;
       case 'contacts':
@@ -462,8 +462,8 @@ export default function AdminDashboard() {
           />
         ) : null;
       default:
-        // Redirect legacy overview to projects
-        return <OrgProjects clusterId={selectedCluster} canView={true} canManage={canManageProjects} profileId={profileId} userRole={selectedRole} canEnterAnyProject={hasPermission('action_enter_any_project')} canApplyToProjects={hasPermission('action_apply_to_projects')} canDeleteProjects={hasPermission('action_delete_projects')} canViewInboundProjects={hasPermission('action_view_inbound_projects')} canManageProjectTeams={hasPermission('action_manage_project_teams')} />;
+        // Unknown or legacy tab ids land on the Members board
+        return <MemberTaskBoard clusterId={selectedCluster} profileId={profileId} canManage={canManageContent} />;
     }
   };
 

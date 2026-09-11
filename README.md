@@ -7,10 +7,31 @@ talent pool, and shared CRM and project workspaces track delivery end to end.
 **App URL**: https://ai.checkgrow.com
 
 This codebase started as a copy of [Kolektiv.io](https://github.com/apoznic/Kolektiv.io)
-and is now developed independently in this repository. The product name and domains have
-been rebranded to CheckGrow. Database tables, edge-function names, and a few route paths
-(for example `/join-kolektiv` and the `invite-to-kolektiv` function) keep their original
-identifiers so the app keeps working against the existing Supabase schema.
+and is now developed independently in this repository. It keeps the organization workspace
+from Kolektiv and drops the AI-agent onboarding, demo, pitch, and plan pages. Database
+tables, edge-function names, and a few route paths (for example `/join-kolektiv` and the
+`invite-to-kolektiv` function) keep their original identifiers so the app keeps working
+against the existing Supabase schema.
+
+## What's inside
+
+Signing in lands on the organization workspace (`/admin`). Its sidebar:
+
+- **Members** (Workspace): every approved member with their open tasks. Add a task to any
+  member from the quick-assign bar or inline on their card; tasks are stored in `crm_tasks`
+  and show up in that member's My Life under "Assigned to me by the team".
+- **My Life**: private task board (To Do / In Progress / Done), links, and meetings, plus the
+  tasks assigned to you by teammates and from legacy project boards.
+- **Sales Leads**: lead pipeline with three views: kanban board, card list, and a standard
+  CRM table (sortable columns, inline stage change, pipeline and weighted totals). The
+  chosen view is remembered per browser.
+- **Members & Skills**: member directory, roles, join requests, invitations, and skills.
+- **Newsletter**: audiences and groups synced with Resend, campaign sending and history,
+  and Task Reminders that email each member a digest of their open tasks.
+- **Registry**: spreadsheet-style lists with custom columns, CSV export, paste from Excel,
+  and webhooks.
+- **Resources**, **Contacts**, **LinkedIn Lead Generator**, and **Settings** (general,
+  role permissions, integrations).
 
 ## Stack
 

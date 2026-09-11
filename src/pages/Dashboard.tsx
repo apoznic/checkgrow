@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { FloatingLayout } from '@/components/FloatingLayout';
 import { useAuth } from '@/lib/auth';
@@ -8,7 +8,6 @@ import { supabase } from '@/integrations/supabase/client';
 export default function Dashboard() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -31,15 +30,10 @@ export default function Dashboard() {
         navigateToDashboard();
       }
     }
-  }, [user, loading, navigate, searchParams]);
+  }, [user, loading, navigate]);
 
   const navigateToDashboard = () => {
-    const typeParam = searchParams.get('type');
-    if (typeParam === 'supply') {
-      navigate('/supply', { replace: true });
-    } else {
-      navigate('/demand', { replace: true });
-    }
+    navigate('/admin', { replace: true });
   };
 
   return (
