@@ -1,0 +1,40 @@
+project_id = "cxkqmlmqlndrehbuenvc"
+
+[functions.google-calendar-auth]
+verify_jwt = false
+
+[functions.google-calendar-callback]
+verify_jwt = false
+
+[functions.google-calendar-sync]
+verify_jwt = false
+
+[functions.notify-project-acceptance]
+verify_jwt = false
+
+[functions.process-email-queue]
+verify_jwt = true
+
+[functions.send-announcement-emails]
+verify_jwt = false
+
+[functions.invite-to-kolektiv]
+verify_jwt = false
+
+[functions.manage-integrations]
+verify_jwt = false
+
+[functions.firecrawl-scrape]
+verify_jwt = false
+
+[functions.scrape-lead]
+verify_jwt = false
+
+[functions.ai-prospect-finder]
+verify_jwt = false
+
+[functions.stripe-connect-onboard]
+verify_jwt = false
+
+[functions.stripe-task-payment]
+verify_jwt = false

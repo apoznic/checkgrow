@@ -1,0 +1,1 @@
+ALTER TABLE public.deal_members ADD COLUMN one_time_commission numeric DEFAULT 0;

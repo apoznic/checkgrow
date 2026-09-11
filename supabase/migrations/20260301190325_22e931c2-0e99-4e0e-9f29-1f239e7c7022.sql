@@ -1,0 +1,1 @@
+ALTER TABLE public.project_links ADD COLUMN IF NOT EXISTS urls jsonb DEFAULT '[]'::jsonb;

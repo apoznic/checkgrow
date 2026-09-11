@@ -1,0 +1,3 @@
+
+ALTER TABLE public.crm_tasks ADD COLUMN IF NOT EXISTS brief TEXT;
+ALTER TABLE public.crm_tasks ADD COLUMN IF NOT EXISTS brief_generated_at TIMESTAMP WITH TIME ZONE;

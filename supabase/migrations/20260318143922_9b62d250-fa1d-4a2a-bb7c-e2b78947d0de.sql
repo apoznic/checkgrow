@@ -1,0 +1,1 @@
+ALTER TABLE public.project_sticky_notes ADD COLUMN title text NOT NULL DEFAULT '';

@@ -1,0 +1,1 @@
+ALTER TABLE public.crm_deals ADD COLUMN org_equity numeric DEFAULT 0;

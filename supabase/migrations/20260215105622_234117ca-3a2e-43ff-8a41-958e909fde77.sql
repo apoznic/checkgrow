@@ -1,0 +1,2 @@
+ALTER TABLE public.project_teams DROP CONSTRAINT project_teams_status_check;
+ALTER TABLE public.project_teams ADD CONSTRAINT project_teams_status_check CHECK (status = ANY (ARRAY['proposed'::text, 'accepted'::text, 'declined'::text, 'applied'::text]));

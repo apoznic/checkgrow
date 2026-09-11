@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Users can view projects where they have assigned tasks" ON public.projects;
