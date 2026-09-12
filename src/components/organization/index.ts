@@ -1,11 +1,8 @@
-export { OrgDashboard } from './OrgDashboard';
 export { OrgMembers } from './OrgMembers';
 export { OrgAnnouncements } from './OrgAnnouncements';
-export { OrgResources } from './OrgResources';
-export { OrgProjects } from './OrgProjects';
-export { CreateProjectModal } from './CreateProjectModal';
 export { OrgSettings } from './OrgSettings';
 export { OrgIntegrations } from './OrgIntegrations';
 export { MemberSkillsView } from './MemberSkillsView';
 export { RolePermissions } from './RolePermissions';
 export { MyAssignments } from './MyAssignments';
+export { MemberTaskBoard } from './MemberTaskBoard';

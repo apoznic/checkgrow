@@ -183,12 +183,7 @@ export function OrgAnnouncements({ clusterId, canManage, profileId, isOwner }: O
   };
 
   const checkCalendarConnection = async () => {
-    const { data } = await supabase
-      .from('cluster_calendar_tokens')
-      .select('id')
-      .eq('cluster_id', clusterId)
-      .maybeSingle();
-    setCalendarConnected(!!data);
+    setCalendarConnected(false);
   };
 
   useEffect(() => {
@@ -253,26 +248,8 @@ export function OrgAnnouncements({ clusterId, canManage, profileId, isOwner }: O
     }
   };
 
-  const createCalendarEvent = async (title: string, content: string, priority: string) => {
-    const now = new Date();
-    const endDate = new Date(now.getTime() + 60 * 60 * 1000);
-    const { error: calError } = await supabase
-      .from('calendar_events')
-      .insert({
-        cluster_id: clusterId,
-        title: `📢 ${title}`,
-        description: content,
-        start_date: now.toISOString(),
-        end_date: endDate.toISOString(),
-        all_day: true,
-        created_by: profileId,
-        color: priority === 'urgent' ? 'red' : priority === 'high' ? 'orange' : 'blue',
-      });
-    if (calError) {
-      toast({ title: 'Calendar event failed', description: calError.message, variant: 'destructive' });
-    } else {
-      toast({ title: '📅 Calendar event created' });
-    }
+  const createCalendarEvent = async (_title: string, _content: string, _priority: string) => {
+    // Calendar integration is not part of CheckGrow.
   };
 
   const handleCreate = async () => {

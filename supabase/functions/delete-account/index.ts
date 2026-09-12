@@ -50,8 +50,6 @@ Deno.serve(async (req) => {
       await adminClient.from("user_roles").delete().eq("user_id", user.id);
       // Remove skills
       await adminClient.from("skills").delete().eq("profile_id", profile.id);
-      // Remove project team memberships
-      await adminClient.from("project_teams").delete().eq("profile_id", profile.id);
       // Remove profile
       await adminClient.from("profiles").delete().eq("id", profile.id);
     }

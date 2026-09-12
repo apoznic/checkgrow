@@ -9,7 +9,7 @@ export interface TemplateInput {
   footerText?: string;
 }
 
-const LOGO_URL = 'https://cxkqmlmqlndrehbuenvc.supabase.co/storage/v1/object/public/public-assets/kolektiv-logo.png';
+const LOGO_URL = 'https://ai.checkgrow.com/checkgrow-logo.png';
 
 const escape = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const paragraphs = (s: string) => escape(s).split(/\n{2,}/).map(p => `<p style="margin:0 0 16px">${p.replace(/\n/g, '<br/>')}</p>`).join('');

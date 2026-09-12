@@ -176,11 +176,7 @@ import {
          .from('skills')
          .select('*')
          .in('profile_id', memberIds),
-       supabase
-         .from('project_teams')
-         .select('profile_id, project_id')
-         .in('profile_id', memberIds)
-         .eq('status', 'accepted')
+       Promise.resolve({ data: [] as { profile_id: string; project_id: string }[] })
      ]);
  
      const membersWithData: MemberWithSkills[] = approvedRes.data.map(e => {

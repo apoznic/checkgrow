@@ -36,8 +36,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    const senderName = "KUT community";
-    const fromEmail = "kut@checkgrow.com";
+    const senderDomain = (emailConfig?.sender_domain as string) || "notify.checkgrow.com";
+    const senderName = (emailConfig?.sender_name as string) || "CheckGrow";
+    const fromEmail = `notify@${senderDomain}`;
 
     // Get all approved members of this cluster
     const { data: enrollments, error: enrollError } = await supabase

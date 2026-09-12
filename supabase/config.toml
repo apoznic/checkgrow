@@ -1,40 +1,25 @@
-project_id = "cxkqmlmqlndrehbuenvc"
+project_id = "pylycnelknmkchfweaph"
 
-[functions.google-calendar-auth]
-verify_jwt = false
+[functions.accept-invitation]
+verify_jwt = true
 
-[functions.google-calendar-callback]
-verify_jwt = false
+[functions.delete-account]
+verify_jwt = true
 
-[functions.google-calendar-sync]
-verify_jwt = false
+[functions.invite-to-kolektiv]
+verify_jwt = true
 
-[functions.notify-project-acceptance]
-verify_jwt = false
+[functions.manage-integrations]
+verify_jwt = true
 
-[functions.process-email-queue]
+[functions.resend-newsletter]
+verify_jwt = true
+
+[functions.send-task-reminders]
 verify_jwt = true
 
 [functions.send-announcement-emails]
-verify_jwt = false
+verify_jwt = true
 
-[functions.invite-to-kolektiv]
-verify_jwt = false
-
-[functions.manage-integrations]
-verify_jwt = false
-
-[functions.firecrawl-scrape]
-verify_jwt = false
-
-[functions.scrape-lead]
-verify_jwt = false
-
-[functions.ai-prospect-finder]
-verify_jwt = false
-
-[functions.stripe-connect-onboard]
-verify_jwt = false
-
-[functions.stripe-task-payment]
+[functions.registry-webhook]
 verify_jwt = false

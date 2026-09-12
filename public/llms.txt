@@ -8,7 +8,7 @@ CheckGrow is an operating system for small teams and agencies. Every organizatio
 
 - [Home](/): Product landing page.
 - [Sign in](/auth): Log in or create an account.
-- [Organization workspace](/admin): Members board, My Life, Sales Leads, Members & Skills, Newsletter, Resources, Contacts, Registry, and Settings.
+- [Organization workspace](/admin): Members board, My Life, Sales Leads, Members & Skills, Newsletter, Registry, and Settings.
 - [Join an Organization](/join-kolektiv): Discover and request membership in organizations.
 - [Privacy Policy](/privacy): How CheckGrow collects, uses, and protects user data.
 - [Terms of Use](/terms): Terms governing use of the platform.

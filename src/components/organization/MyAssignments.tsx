@@ -3,9 +3,8 @@ import {
   Plus, Trash2, Loader2, Link2, CalendarClock,
   ExternalLink, Lock, Circle, Clock, CheckCircle2, CalendarPlus,
   Pencil, Check, X, FolderPlus, Folder, ChevronDown, ChevronRight,
-  Archive, ArchiveRestore, Briefcase, ArrowUpRight, AlertCircle, Users
+  Archive, ArchiveRestore, AlertCircle, Users
 } from 'lucide-react';
-import { Link as RouterLink } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format, isPast, isToday, isTomorrow } from 'date-fns';
@@ -95,11 +94,6 @@ export function MyAssignments({ profileId }: MyAssignmentsProps) {
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [editingGroupName, setEditingGroupName] = useState('');
   const [meetings, setMeetings] = useState<PrivateMeeting[]>([]);
-  const [projectTasks, setProjectTasks] = useState<Array<{
-    id: string; title: string; status: string; priority: string | null;
-    due_date: string | null; project_id: string;
-    project: { id: string; title: string; cluster_id: string | null } | null;
-  }>>([]);
 
   const [teamTasks, setTeamTasks] = useState<TeamTask[]>([]);
 
@@ -112,31 +106,8 @@ export function MyAssignments({ profileId }: MyAssignmentsProps) {
 
   const loadAll = async () => {
     setIsLoading(true);
-    await Promise.all([loadTasks(), loadLinks(), loadLinkGroups(), loadMeetings(), loadProjectTasks(), loadTeamTasks()]);
+    await Promise.all([loadTasks(), loadLinks(), loadLinkGroups(), loadMeetings(), loadTeamTasks()]);
     setIsLoading(false);
-  };
-
-  const loadProjectTasks = async () => {
-    const { data, error } = await (supabase as any)
-      .from('project_tasks')
-      .select('id, title, status, priority, due_date, project_id, project:projects(id, title, cluster_id)')
-      .eq('assigned_to', profileId)
-      .is('archived_at', null)
-      .neq('status', 'done')
-      .order('due_date', { ascending: true, nullsFirst: false });
-
-    if (error) {
-      toast({ title: 'Could not load project tasks', description: error.message, variant: 'destructive' });
-      setProjectTasks([]);
-      return;
-    }
-
-    setProjectTasks(data || []);
-  };
-
-  const updateProjectTaskStatus = async (id: string, status: string) => {
-    setProjectTasks(prev => prev.map(t => t.id === id ? { ...t, status } : t));
-    await (supabase as any).from('project_tasks').update({ status }).eq('id', id);
   };
 
   // Tasks assigned to me from the Members board (crm_tasks)
@@ -1092,108 +1063,6 @@ export function MyAssignments({ profileId }: MyAssignmentsProps) {
         )}
       </section>
 
-      {/* PROJECT TASKS ASSIGNED TO ME — grouped by project, at the bottom */}
-      <section className="space-y-3">
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-            <Briefcase className="w-3.5 h-3.5" /> Assigned to me across projects
-          </h3>
-          <span className="text-[11px] text-muted-foreground">
-            {projectTasks.filter(t => t.status !== 'done').length} open · {projectTasks.length} total
-          </span>
-        </div>
-
-        {projectTasks.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border/40 p-6 text-center">
-            <p className="text-xs text-muted-foreground">No tasks assigned to you yet. Project leads can assign you tasks from any project board.</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {(() => {
-              const groups = new Map<string, { name: string; tasks: typeof projectTasks }>();
-              projectTasks.forEach(t => {
-                const pid = t.project?.id || t.project_id;
-                const pname = t.project?.title || 'Unknown project';
-                if (!groups.has(pid)) groups.set(pid, { name: pname, tasks: [] });
-                groups.get(pid)!.tasks.push(t);
-              });
-              const order: Array<'todo' | 'in_progress' | 'done'> = ['todo', 'in_progress', 'done'];
-              const normalized = (s: string) => s === 'approved' ? 'todo' : (s as any);
-              return Array.from(groups.entries()).map(([pid, g]) => {
-                const open = g.tasks.filter(t => t.status !== 'done').length;
-                return (
-                  <div key={pid} className="rounded-xl border border-border/40 bg-card overflow-hidden">
-                    <div className="flex items-center justify-between gap-2 px-4 py-2.5 bg-secondary/30 border-b border-border/40">
-                      <RouterLink to={`/project/${pid}`} className="flex items-center gap-2 text-sm font-semibold hover:text-primary transition group">
-                        <Briefcase className="w-3.5 h-3.5 text-primary" />
-                        <span className="truncate">{g.name}</span>
-                        <ArrowUpRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition" />
-                      </RouterLink>
-                      <span className="text-[11px] text-muted-foreground shrink-0">
-                        {open} open · {g.tasks.length} total
-                      </span>
-                    </div>
-                    <div className="divide-y divide-border/30">
-                      {g.tasks
-                        .slice()
-                        .sort((a, b) => order.indexOf(normalized(a.status)) - order.indexOf(normalized(b.status)))
-                        .map(task => {
-                          const due = getDueLabel(task.due_date);
-                          const norm = normalized(task.status);
-                          const cfg = norm === 'todo'
-                            ? { icon: Circle, color: 'text-muted-foreground', label: 'To Do' }
-                            : norm === 'in_progress'
-                            ? { icon: Clock, color: 'text-amber-500', label: 'In Progress' }
-                            : { icon: CheckCircle2, color: 'text-emerald-500', label: 'Done' };
-                          const StatusIcon = cfg.icon;
-                          return (
-                            <div key={task.id} className="group px-4 py-2.5 flex items-center gap-3 hover:bg-secondary/20 transition">
-                              <button
-                                onClick={() => {
-                                  const next = norm === 'todo' ? 'in_progress' : norm === 'in_progress' ? 'done' : 'todo';
-                                  updateProjectTaskStatus(task.id, next);
-                                }}
-                                className="shrink-0"
-                                title={`Status: ${cfg.label} — click to advance`}
-                              >
-                                <StatusIcon className={`w-4 h-4 ${cfg.color}`} />
-                              </button>
-                              <p className={`flex-1 text-sm leading-snug ${norm === 'done' ? 'line-through text-muted-foreground' : ''}`}>
-                                {task.title}
-                              </p>
-                              {task.priority && (
-                                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md border shrink-0 ${
-                                  task.priority === 'high' ? 'bg-destructive/10 text-destructive border-destructive/20' :
-                                  task.priority === 'medium' ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' :
-                                  'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
-                                }`}>{task.priority}</span>
-                              )}
-                              {due && (
-                                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md inline-flex items-center gap-1 shrink-0 ${
-                                  due.urgent ? 'bg-destructive/10 text-destructive' : 'bg-secondary text-muted-foreground'
-                                }`}>
-                                  {due.urgent && <AlertCircle className="w-2.5 h-2.5" />}
-                                  {due.text}
-                                </span>
-                              )}
-                              <RouterLink
-                                to={`/project/${pid}`}
-                                className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary transition shrink-0"
-                                title="Open project"
-                              >
-                                <ArrowUpRight className="w-3.5 h-3.5" />
-                              </RouterLink>
-                            </div>
-                          );
-                        })}
-                    </div>
-                  </div>
-                );
-              });
-            })()}
-          </div>
-        )}
-      </section>
     </div>
   );
 }

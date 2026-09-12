@@ -1,1 +1,0 @@
-ALTER TABLE public.clusters ADD COLUMN category text DEFAULT null;

@@ -8,7 +8,6 @@ import { SEO } from '@/components/SEO';
 import { FloatingLayout } from '@/components/FloatingLayout';
 import { useAuth } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
-import { lovable } from '@/integrations/lovable/index';
 import { supabase } from '@/integrations/supabase/client';
 
 interface InviteClusterInfo {
@@ -133,41 +132,23 @@ export default function Auth() {
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     try {
-      const isCustomDomain =
-        !window.location.hostname.includes('lovable.app') &&
-        !window.location.hostname.includes('lovableproject.com');
-
       // Store invite cluster ID in localStorage so we can pick it up after OAuth redirect
       if (inviteClusterId) {
         localStorage.setItem('pending_invite_cluster', inviteClusterId);
       }
 
-      if (isCustomDomain) {
-        const { data, error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            redirectTo: `${window.location.origin}/dashboard`,
-            skipBrowserRedirect: true,
-          },
-        });
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+          skipBrowserRedirect: true,
+        },
+      });
 
-        if (error) throw error;
+      if (error) throw error;
 
-        if (data?.url) {
-          window.location.href = data.url;
-        }
-      } else {
-        const result = await lovable.auth.signInWithOAuth('google', {
-          redirect_uri: window.location.origin,
-        });
-
-        if (result.error) {
-          toast({
-            title: 'Google sign in failed',
-            description: result.error.message,
-            variant: 'destructive',
-          });
-        }
+      if (data?.url) {
+        window.location.href = data.url;
       }
     } catch (error: any) {
       toast({

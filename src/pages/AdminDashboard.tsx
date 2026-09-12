@@ -17,14 +17,13 @@ import { useToast } from '@/hooks/use-toast';
 import { OrgMembers } from '@/components/organization/OrgMembers';
 import { MemberSkillsView } from '@/components/organization/MemberSkillsView';
 import { OrgAnnouncements } from '@/components/organization/OrgAnnouncements';
-import { OrgResources } from '@/components/organization/OrgResources';
 import { MemberTaskBoard } from '@/components/organization/MemberTaskBoard';
 import { OrgSettings } from '@/components/organization/OrgSettings';
 import { OrgIntegrations } from '@/components/organization/OrgIntegrations';
 import { RolePermissions } from '@/components/organization/RolePermissions';
 import { SettingsHub } from '@/components/organization/SettingsHub';
 import { MyAssignments, useAssignmentCounts } from '@/components/organization/MyAssignments';
-import { ContactList, DealList, CRMContactsBook } from '@/components/crm';
+import { DealList } from '@/components/crm';
 import { RegistryPanel } from '@/components/organization/RegistryPanel';
 
 
@@ -45,7 +44,7 @@ interface Cluster {
   category: string | null;
 }
 
-type Tab = 'overview' | 'my-assignments' | 'members' | 'announcements' | 'resources' | 'team' | 'contacts' | 'contacts_book' | 'deals' | 'settings' | 'permissions' | 'integrations' | 'registry';
+type Tab = 'overview' | 'my-assignments' | 'members' | 'announcements' | 'team' | 'deals' | 'settings' | 'permissions' | 'integrations' | 'registry';
 
 const normalizeRole = (role?: string | null) => (role || 'member').trim().toLowerCase();
 
@@ -246,7 +245,7 @@ export default function AdminDashboard() {
     const [membersRes, pendingRes, projectsRes, announcementsRes, contactsRes, dealsRes, tasksRes, orgMembersRes] = await Promise.all([
       supabase.from('cluster_enrollments').select('id', { count: 'exact', head: true }).eq('cluster_id', selectedCluster).eq('status', 'approved'),
       supabase.from('cluster_enrollments').select('id', { count: 'exact', head: true }).eq('cluster_id', selectedCluster).eq('status', 'pending'),
-      supabase.from('projects').select('id', { count: 'exact', head: true }).eq('cluster_id', selectedCluster),
+      Promise.resolve({ count: 0 }),
       supabase.from('org_announcements').select('id', { count: 'exact', head: true }).eq('cluster_id', selectedCluster),
       supabase.from('crm_contacts').select('id', { count: 'exact', head: true }).eq('cluster_id', selectedCluster),
       supabase.from('crm_deals').select('id', { count: 'exact', head: true }).eq('cluster_id', selectedCluster),
@@ -274,10 +273,10 @@ export default function AdminDashboard() {
 
   // Default permissions per role (fallback if no DB overrides exist)
   const DEFAULT_ROLE_PERMS: Record<string, string[]> = {
-    owner: ['tab_overview', 'tab_members', 'tab_announcements', 'tab_resources', 'tab_projects', 'tab_contacts_book', 'tab_linkedin_leads', 'tab_deals', 'tab_activities', 'tab_tasks', 'action_view_all_leads', 'action_manage_deals', 'action_approve_deals', 'action_manage_contacts', 'action_delete_org', 'view_finders_fee', 'view_project_compensation', 'view_monthly_compensation', 'view_equity_assignments', 'action_create_projects', 'action_enter_any_project', 'action_manage_project_teams', 'action_delete_projects', 'action_view_inbound_projects', 'action_manage_members', 'action_change_roles', 'action_manage_announcements', 'action_manage_resources', 'action_apply_to_projects'],
-    admin: ['tab_overview', 'tab_members', 'tab_announcements', 'tab_resources', 'tab_projects', 'tab_contacts_book', 'tab_linkedin_leads', 'tab_deals', 'tab_activities', 'tab_tasks', 'action_view_all_leads', 'action_manage_deals', 'action_approve_deals', 'action_manage_contacts', 'view_finders_fee', 'view_project_compensation', 'view_monthly_compensation', 'view_equity_assignments', 'action_create_projects', 'action_enter_any_project', 'action_manage_project_teams', 'action_delete_projects', 'action_view_inbound_projects', 'action_manage_members', 'action_change_roles', 'action_manage_announcements', 'action_manage_resources'],
-    project_manager: ['tab_overview', 'tab_members', 'tab_announcements', 'tab_resources', 'tab_projects', 'tab_contacts_book', 'tab_linkedin_leads', 'tab_deals', 'tab_activities', 'tab_tasks', 'action_view_all_leads', 'action_manage_deals', 'action_approve_deals', 'action_manage_contacts', 'view_finders_fee', 'view_project_compensation', 'view_monthly_compensation', 'view_equity_assignments', 'action_create_projects', 'action_enter_any_project', 'action_manage_project_teams', 'action_view_inbound_projects', 'action_apply_to_projects', 'action_manage_resources'],
-    member: ['tab_overview', 'tab_members', 'tab_announcements', 'tab_resources', 'tab_projects', 'tab_contacts_book', 'tab_linkedin_leads', 'tab_deals', 'tab_activities', 'tab_tasks', 'action_apply_to_projects'],
+    owner: ['tab_members', 'tab_announcements', 'tab_deals', 'action_manage_members', 'action_change_roles', 'action_manage_announcements', 'action_manage_deals', 'action_approve_deals', 'action_manage_contacts', 'action_delete_org'],
+    admin: ['tab_members', 'tab_announcements', 'tab_deals', 'action_manage_members', 'action_change_roles', 'action_manage_announcements', 'action_manage_deals', 'action_approve_deals', 'action_manage_contacts'],
+    project_manager: ['tab_members', 'tab_announcements', 'tab_deals', 'action_manage_deals', 'action_approve_deals', 'action_manage_contacts'],
+    member: ['tab_members', 'tab_announcements', 'tab_deals'],
   };
 
   const effectiveRole = normalizeRole(selectedRole);
@@ -374,7 +373,6 @@ export default function AdminDashboard() {
 
   const canManageMembers = effectiveRole === 'owner' || hasPermission('action_manage_members');
   const canManageContent = effectiveRole === 'owner' || ['admin', 'project_manager'].includes(effectiveRole);
-  const canManageProjects = effectiveRole === 'owner' || hasPermission('action_create_projects');
   const canManageAnnouncements = effectiveRole === 'owner' || hasPermission('action_manage_announcements');
   
   const canManageSettings = effectiveRole === 'owner';
@@ -393,9 +391,6 @@ export default function AdminDashboard() {
     { id: 'deals', label: 'Sales Leads', icon: TrendingUp, section: 'Workspace', hidden: !hasPermission('tab_deals'), highlight: true },
     { id: 'members', label: 'Members & Skills', icon: Users, section: 'General', badge: canManageMembers && stats.pending > 0 ? stats.pending : undefined, hidden: !hasPermission('tab_members') },
     { id: 'announcements', label: 'Newsletter', icon: Megaphone, section: 'General', hidden: !hasPermission('tab_announcements') },
-    { id: 'resources', label: 'Resources', icon: FileText, section: 'General', hidden: !hasPermission('tab_resources') },
-    { id: 'contacts_book', label: 'Contacts', icon: UserCircle, section: 'General', hidden: !hasPermission('tab_contacts_book') },
-    { id: 'contacts', label: 'LinkedIn Lead Generator', icon: Linkedin, section: 'General', hidden: !hasPermission('tab_linkedin_leads') },
     { id: 'registry', label: 'Registry', icon: Database, section: 'General', hidden: !['owner','admin'].includes(effectiveRole) },
     { id: 'settings', label: 'Settings', icon: Settings, section: 'General', hidden: !canManageSettings },
   ];
@@ -424,16 +419,10 @@ export default function AdminDashboard() {
         return <MemberSkillsView clusterId={selectedCluster} canManage={canManageMembers} currentProfileId={profileId} />;
       case 'announcements':
         return <OrgAnnouncements clusterId={selectedCluster} canManage={canManageAnnouncements} profileId={profileId} isOwner={effectiveRole === 'owner'} />;
-      case 'resources':
-        return <OrgResources clusterId={selectedCluster} canManage={canManageContent} profileId={profileId} />;
       case 'team':
         return <MemberTaskBoard clusterId={selectedCluster} profileId={profileId} canManage={canManageContent} />;
-      case 'contacts_book':
-        return <CRMContactsBook clusterId={selectedCluster} profileId={profileId} canManage={canManageContent} userRole={selectedRole} />;
-      case 'contacts':
-        return <ContactList clusterId={selectedCluster} profileId={profileId} canManage={canManageContent} userRole={selectedRole} />;
       case 'deals':
-        return <DealList clusterId={selectedCluster} profileId={profileId} canManage={canManageContent} userRole={selectedRole} showFindersFee={hasPermission('view_finders_fee')} showProjectCompensation={hasPermission('view_project_compensation')} showMonthlyCompensation={hasPermission('view_monthly_compensation')} showEquityAssignments={hasPermission('view_equity_assignments')} initialDealId={deepLinkItemId} />;
+        return <DealList clusterId={selectedCluster} profileId={profileId} canManage={canManageContent} userRole={selectedRole} initialDealId={deepLinkItemId} />;
       case 'registry':
         return <RegistryPanel clusterId={selectedCluster} canManage={canManageContent} />;
       case 'permissions':

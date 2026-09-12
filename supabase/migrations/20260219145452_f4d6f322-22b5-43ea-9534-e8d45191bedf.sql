@@ -1,1 +1,0 @@
-ALTER TYPE public.deal_stage ADD VALUE IF NOT EXISTS 'archived';

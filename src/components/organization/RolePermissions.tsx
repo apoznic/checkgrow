@@ -19,44 +19,21 @@ const ROLES = [
 
 const PERMISSIONS = [
   // General Tabs
-  { key: 'tab_overview', label: 'Overview', section: 'General Tabs', description: 'Dashboard overview with stats' },
   { key: 'tab_members', label: 'Members & Skills', section: 'General Tabs', description: 'View member list and skills' },
-  { key: 'tab_announcements', label: 'Announcements', section: 'General Tabs', description: 'Organization announcements' },
-  { key: 'tab_resources', label: 'Resources', section: 'General Tabs', description: 'Shared documents and links' },
-  { key: 'tab_projects', label: 'Projects (legacy)', section: 'General Tabs', description: 'Legacy project boards; the Members board is visible to everyone' },
+  { key: 'tab_announcements', label: 'Newsletter', section: 'General Tabs', description: 'Announcements, newsletter, and task reminders' },
 
   // CRM Tabs
-  { key: 'tab_contacts_book', label: 'Contacts', section: 'CRM Tabs', description: 'General contact directory' },
-  { key: 'tab_linkedin_leads', label: 'LinkedIn Lead Generator', section: 'CRM Tabs', description: 'LinkedIn lead import & management' },
   { key: 'tab_deals', label: 'Sales Leads', section: 'CRM Tabs', description: 'Sales lead pipeline' },
-  { key: 'tab_activities', label: 'Activity Log', section: 'CRM Tabs', description: 'Activity tracking' },
-  
-
-  // Project Permissions
-  { key: 'action_create_projects', label: 'Create Projects', section: 'Project Permissions', description: 'Create new projects within the organization' },
-  { key: 'action_enter_any_project', label: 'Enter Any Project', section: 'Project Permissions', description: 'Open and view any project without being a team member' },
-  { key: 'action_manage_project_teams', label: 'Manage Project Teams', section: 'Project Permissions', description: 'Add/remove members and approve applications on any project' },
-  { key: 'action_delete_projects', label: 'Delete Projects', section: 'Project Permissions', description: 'Permanently delete organization projects' },
-  { key: 'action_apply_to_projects', label: 'Apply to Projects', section: 'Project Permissions', description: 'Submit applications to join projects' },
-  { key: 'action_view_inbound_projects', label: 'View Inbound Projects', section: 'Project Permissions', description: 'See external projects where org members are matched' },
 
   // Member Management
   { key: 'action_manage_members', label: 'Manage Members', section: 'Member Management', description: 'Approve, reject, and remove organization members' },
   { key: 'action_change_roles', label: 'Change Member Roles', section: 'Member Management', description: 'Promote or demote member roles within the organization' },
   { key: 'action_manage_announcements', label: 'Manage Announcements', section: 'Member Management', description: 'Create, edit, and delete organization announcements' },
-  { key: 'action_manage_resources', label: 'Manage Resources', section: 'Member Management', description: 'Upload, edit, and delete shared resources' },
 
   // CRM Permissions
-  { key: 'action_view_all_leads', label: 'View All LinkedIn Leads', section: 'CRM Permissions', description: 'See all leads, not just own entries' },
   { key: 'action_manage_deals', label: 'Manage Sales Leads', section: 'CRM Permissions', description: 'Create, edit, and delete deals directly' },
   { key: 'action_approve_deals', label: 'Approve Deal Requests', section: 'CRM Permissions', description: 'Approve or reject member deal requests' },
-  { key: 'action_manage_contacts', label: 'Manage Contacts', section: 'CRM Permissions', description: 'Create, edit, and delete contacts' },
-
-  // Compensation
-  { key: 'view_finders_fee', label: 'Finders Fee Leaderboard', section: 'Compensation', description: 'View finders fee rankings and totals' },
-  { key: 'view_project_compensation', label: 'Project Compensation', section: 'Compensation', description: 'View project compensation leaderboard' },
-  { key: 'view_monthly_compensation', label: 'Monthly Recurring', section: 'Compensation', description: 'View monthly recurring compensation dashboard' },
-  { key: 'view_equity_assignments', label: 'Equity & Assignments', section: 'Compensation', description: 'View equity distribution and member assignments' },
+  { key: 'action_manage_contacts', label: 'Manage Contacts', section: 'CRM Permissions', description: 'Create, edit, and delete lead contacts' },
 
   // Danger Zone
   { key: 'action_delete_org', label: 'Delete Organization', section: 'Danger Zone', description: 'Permission to delete the organization' },
@@ -66,11 +43,7 @@ const PERMISSIONS = [
 const DEFAULT_PERMISSIONS: Record<string, string[]> = {
   owner: PERMISSIONS.map(p => p.key), // All permissions
   admin: PERMISSIONS.filter(p => p.key !== 'action_delete_org').map(p => p.key), // Everything except delete org
-  member: [
-    'tab_overview', 'tab_members', 'tab_announcements', 'tab_resources', 'tab_projects',
-    'tab_contacts_book', 'tab_linkedin_leads', 'tab_deals', 'tab_activities',
-    'action_apply_to_projects',
-  ],
+  member: ['tab_members', 'tab_announcements', 'tab_deals'],
 };
 
 type PermissionState = Record<string, Record<string, boolean>>;

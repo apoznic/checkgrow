@@ -8,13 +8,11 @@ import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import AdminDashboard from "./pages/AdminDashboard";
-import ProjectManage from "./pages/ProjectManage";
 import AccountSettings from "./pages/AccountSettings";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfUse from "./pages/TermsOfUse";
 import JoinKolektiv from "./pages/JoinKolektiv";
-import { KutQuickLinks } from "./components/KutQuickLinks";
 
 const queryClient = new QueryClient();
 
@@ -30,14 +28,12 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/project/:projectId" element={<ProjectManage />} />
             <Route path="/account" element={<AccountSettings />} />
             <Route path="/join-kolektiv" element={<JoinKolektiv />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<TermsOfUse />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
-          <KutQuickLinks />
         </TooltipProvider>
       </AuthProvider>
     </BrowserRouter>

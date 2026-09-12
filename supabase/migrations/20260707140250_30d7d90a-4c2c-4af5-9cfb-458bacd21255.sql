@@ -1,1 +1,0 @@
-ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS is_forge boolean NOT NULL DEFAULT false;

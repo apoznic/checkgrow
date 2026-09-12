@@ -1,2 +1,0 @@
-ALTER TABLE public.project_strategic_goals ADD COLUMN IF NOT EXISTS progress integer NOT NULL DEFAULT 0 CHECK (progress >= 0 AND progress <= 100);
-UPDATE public.project_strategic_goals SET progress = 100 WHERE status = 'achieved' AND progress = 0;

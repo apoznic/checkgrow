@@ -17,10 +17,6 @@ import { MentionInput } from './MentionInput';
 import { DealMembersModal } from './DealMembersModal';
 import { DealDetailModal } from './DealDetailModal';
 import { DealTable } from './DealTable';
-import { FindersFeeLeaderboard } from './FindersFeeLeaderboard';
-import { ProjectCompensationLeaderboard } from './ProjectCompensationLeaderboard';
-import { MonthlyCompensationDashboard } from './MonthlyCompensationDashboard';
-import { MemberAssignmentOverview } from './MemberAssignmentOverview';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,10 +40,6 @@ interface DealListProps {
   profileId: string;
   canManage: boolean;
   userRole?: string;
-  showFindersFee?: boolean;
-  showProjectCompensation?: boolean;
-  showMonthlyCompensation?: boolean;
-  showEquityAssignments?: boolean;
   initialDealId?: string | null;
 }
 
@@ -71,7 +63,7 @@ const archiveStage = { value: 'archived' as DealStage, label: 'Archive', color: 
 
 const allStages = [...pipelineStages, archiveStage];
 
-export function DealList({ clusterId, profileId, canManage, userRole, showFindersFee = false, showProjectCompensation = false, showMonthlyCompensation = false, showEquityAssignments = false, initialDealId }: DealListProps) {
+export function DealList({ clusterId, profileId, canManage, userRole, initialDealId }: DealListProps) {
   const { toast } = useToast();
   const [deals, setDeals] = useState<CRMDeal[]>([]);
   const [contacts, setContacts] = useState<CRMContact[]>([]);
@@ -92,7 +84,6 @@ export function DealList({ clusterId, profileId, canManage, userRole, showFinder
 
   // Won celebration
   const [wonDeal, setWonDeal] = useState<CRMDeal | null>(null);
-  const [isCreatingProject, setIsCreatingProject] = useState(false);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -441,101 +432,6 @@ export function DealList({ clusterId, profileId, canManage, userRole, showFinder
         }
       }
     }
-  };
-
-  const handleCreateProjectFromDeal = async () => {
-    if (!wonDeal) return;
-    setIsCreatingProject(true);
-
-    // The responsible person (assigned_to) becomes the project owner/lead
-    const projectOwnerId = wonDeal.assigned_to || profileId;
-
-    const { data: project, error } = await supabase
-      .from('projects')
-      .insert({
-        title: wonDeal.title,
-        description: wonDeal.description || `Project created from won deal "${wonDeal.title}"`,
-        owner_id: projectOwnerId,
-        cluster_id: clusterId,
-        status: 'open',
-        source: 'crm_deal',
-      })
-      .select()
-      .single();
-
-    if (error) {
-      toast({ title: 'Error creating project', description: error.message, variant: 'destructive' });
-      setIsCreatingProject(false);
-      return;
-    }
-
-    // Link deal to project
-    await supabase
-      .from('crm_deals')
-      .update({ project_id: project.id })
-      .eq('id', wonDeal.id);
-
-    // Add the assigned person (project owner) to the team as accepted Project Lead
-    if (projectOwnerId) {
-      const { error: teamError } = await supabase.from('project_teams').insert({
-        project_id: project.id,
-        profile_id: projectOwnerId,
-        role_in_project: 'Project Lead',
-        status: 'accepted',
-      });
-      if (teamError) {
-        console.error('Failed to add project lead to team:', teamError.message);
-        toast({ title: 'Warning', description: 'Project created but the assigned person could not be added to the team automatically. Please add them manually.', variant: 'destructive' });
-      }
-    }
-
-    // Copy deal members to project team (exclude the project owner)
-    const { data: dealMembers } = await supabase
-      .from('deal_members')
-      .select('profile_id')
-      .eq('deal_id', wonDeal.id);
-
-    if (dealMembers && dealMembers.length > 0) {
-      const teamInserts = dealMembers
-        .filter(m => m.profile_id !== projectOwnerId)
-        .map(m => ({
-          project_id: project.id,
-          profile_id: m.profile_id,
-          role_in_project: 'Team Member',
-          status: 'proposed',
-        }));
-      if (teamInserts.length > 0) {
-        await supabase.from('project_teams').insert(teamInserts);
-
-        // Send notifications to all invited members
-        const inviteNotifications = teamInserts.map(m => ({
-          recipient_id: m.profile_id,
-          sender_id: profileId,
-          notification_type: 'project_invite',
-          title: `You've been invited to project "${wonDeal.title}"`,
-          content: `A project was created from the won deal "${wonDeal.title}" and you've been added to the team.`,
-          link_type: 'project',
-          link_id: project.id,
-          cluster_id: clusterId,
-        }));
-        await supabase.from('notifications').insert(inviteNotifications);
-      }
-    }
-
-    // Note: Project Managers are NOT auto-enrolled — they must apply like other members
-
-    // Log activity
-    await supabase.from('project_activities').insert({
-      project_id: project.id,
-      actor_id: profileId,
-      activity_type: 'project_created',
-      description: `Project auto-created from won deal "${wonDeal.title}"`,
-    });
-
-    toast({ title: 'Project created! 🚀', description: `"${wonDeal.title}" is now a project with team members invited.` });
-    setIsCreatingProject(false);
-    setWonDeal(null);
-    loadDeals();
   };
 
   const handleDelete = async (id: string) => {
@@ -1572,21 +1468,12 @@ export function DealList({ clusterId, profileId, canManage, userRole, showFinder
               )}
 
               <p className="text-sm text-muted-foreground mb-6">
-                Would you like to automatically create a project from this deal? Team members will be invited.
+                Nice work. The lead is now marked as won.
               </p>
 
               <div className="flex gap-3">
-                <GlassButtonNew variant="ghost" onClick={() => setWonDeal(null)} className="flex-1">
-                  Skip
-                </GlassButtonNew>
-                <GlassButtonNew
-                  variant="primary"
-                  onClick={handleCreateProjectFromDeal}
-                  isLoading={isCreatingProject}
-                  leftIcon={<Rocket className="w-4 h-4" />}
-                  className="flex-1"
-                >
-                  Create Project
+                <GlassButtonNew variant="primary" onClick={() => setWonDeal(null)} className="flex-1">
+                  Close
                 </GlassButtonNew>
               </div>
             </motion.div>
@@ -1623,23 +1510,6 @@ export function DealList({ clusterId, profileId, canManage, userRole, showFinder
         )}
       </AnimatePresence>
 
-      {/* Compensation & Assignments - controlled by granular permissions */}
-      {(showFindersFee || showProjectCompensation) && (
-        <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {showFindersFee && <FindersFeeLeaderboard clusterId={clusterId} />}
-          {showProjectCompensation && <ProjectCompensationLeaderboard clusterId={clusterId} />}
-        </div>
-      )}
-      {showMonthlyCompensation && (
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <MonthlyCompensationDashboard clusterId={clusterId} />
-        </div>
-      )}
-      {showEquityAssignments && (
-        <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
-          <MemberAssignmentOverview clusterId={clusterId} />
-        </div>
-      )}
     </div>
   );
 }
