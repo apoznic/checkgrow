@@ -72,7 +72,7 @@ export function DealList({ clusterId, profileId, canManage, userRole, initialDea
   const [showModal, setShowModal] = useState(false);
   const [editingDeal, setEditingDeal] = useState<CRMDeal | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'kanban' | 'table'>(() => (localStorage.getItem('deals_view_mode') as 'list' | 'kanban' | 'table') || 'table');
+  const [viewMode, setViewMode] = useState<'list' | 'kanban' | 'table'>(() => (localStorage.getItem('deals_view_mode') as 'list' | 'kanban' | 'table') || 'kanban');
   useEffect(() => { localStorage.setItem('deals_view_mode', viewMode); }, [viewMode]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStage, setFilterStage] = useState<DealStage | 'all'>('all');

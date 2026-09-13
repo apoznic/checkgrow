@@ -48,6 +48,11 @@ export interface CRMDeal {
   project_id?: string | null;
   archived_from?: string | null;
   source?: string | null;
+  campaign?: string | null;
+  form_name?: string | null;
+  ad_name?: string | null;
+  attributes?: Record<string, unknown> | null;
+  inbound_webhook_id?: string | null;
   crm_contacts?: CRMContact;
   profiles?: {
     id: string;

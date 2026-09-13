@@ -359,8 +359,9 @@ Deno.serve(async (req) => {
     .map(([k, v]) => `${k}: ${v}`)
     .join("\n");
   const descriptionParts = [message, extras ? `Details\n${extras}` : null].filter(Boolean);
-  const campaign = pick(payload, ["campaign", "campaign_name", "form", "form_name"])?.value ?? null;
-  const title = subject || [company || name || email, campaign || "new lead"].filter(Boolean).join(" · ");
+  const campaign = pick(payload, ["campaign", "campaign_name", "utm_campaign"])?.value ?? null;
+  const titleHint = campaign || pick(payload, ["form", "form_name"])?.value || null;
+  const title = subject || [company || name || email, titleHint || "new lead"].filter(Boolean).join(" · ");
 
   const { data: deal, error: dealError } = await supabase
     .from("crm_deals")
@@ -378,6 +379,10 @@ Deno.serve(async (req) => {
       created_by: creatorId,
       assigned_to: hook.default_assigned_to,
       inbound_webhook_id: hook.id,
+      campaign,
+      form_name: pick(payload, ["form", "form_name", "form_id"])?.value ?? null,
+      ad_name: pick(payload, ["ad", "ad_name", "adset_name", "ad_set"])?.value ?? null,
+      attributes: flat,
     })
     .select("id")
     .single();

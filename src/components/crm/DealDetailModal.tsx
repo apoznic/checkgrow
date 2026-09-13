@@ -4,8 +4,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, User, Calendar, DollarSign, MessageSquare, Send,
-  Users, Trophy, TrendingUp, FileText, Archive
-} from 'lucide-react';
+  Users, Trophy, TrendingUp, FileText, Archive, Tag } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { GlassButtonNew } from '@/components/ui/glass-button';
@@ -69,7 +68,7 @@ export function DealDetailModal({ deal, profileId, clusterId, orgMembers, onClos
     loadComments();
   }, [deal.id]);
 
-  const persist = async (patch: Record<string, any>) => {
+  const persist = async (patch: Record<string, unknown>) => {
     const { error } = await supabase.from('crm_deals').update(patch).eq('id', deal.id);
     if (error) toast({ title: 'Error', description: error.message, variant: 'destructive' });
   };
@@ -316,6 +315,54 @@ export function DealDetailModal({ deal, profileId, clusterId, orgMembers, onClos
               )}
             </div>
           </div>
+
+          {/* Source & attribution */}
+          {(() => {
+            const flat: [string, string][] = [];
+            const walk = (obj: Record<string, unknown>, prefix = '') => {
+              for (const [k, v] of Object.entries(obj || {})) {
+                if (v === null || v === undefined || v === '') continue;
+                const label = prefix ? `${prefix}.${k}` : k;
+                if (Array.isArray(v)) flat.push([label, v.map(x => (typeof x === 'object' ? JSON.stringify(x) : String(x))).join(', ')]);
+                else if (typeof v === 'object') walk(v as Record<string, unknown>, label);
+                else flat.push([label, String(v)]);
+              }
+            };
+            walk((deal.attributes as Record<string, unknown>) || {});
+            const primary = [['Source', deal.source], ['Campaign', deal.campaign], ['Form', deal.form_name], ['Ad', deal.ad_name]].filter(([, v]) => v) as [string, string][];
+            const skip = new Set(['name', 'email', 'phone', 'company', 'message', 'campaign', 'form', 'form_name', 'ad', 'ad_name', 'source', 'subject', 'title']);
+            const extra = flat.filter(([k]) => !skip.has(k.toLowerCase()));
+            if (primary.length === 0 && extra.length === 0) return null;
+            return (
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Tag className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Source & attribution</span>
+                </div>
+                <div className="rounded-xl bg-secondary/30 border border-border/20 p-3 space-y-2">
+                  {primary.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {primary.map(([k, v]) => (
+                        <span key={k} className="inline-flex items-center gap-1 rounded-full bg-card border border-border px-2 py-0.5 text-xs">
+                          <span className="text-muted-foreground">{k}</span><span className="font-medium">{v}</span>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {extra.length > 0 && (
+                    <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs max-h-40 overflow-auto">
+                      {extra.map(([k, v]) => (
+                        <div key={k} className="contents">
+                          <dt className="text-muted-foreground truncate">{k}</dt>
+                          <dd className="break-words">{v}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Description */}
           <div>

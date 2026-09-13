@@ -85,6 +85,17 @@ Function secrets to set in the Supabase dashboard (Edge Functions → Secrets):
 
 Each organization adds its own Resend API key under Settings → Integrations.
 
+## Leads view
+
+CRM → Leads is the default view: one dense table of every lead with contact details, source,
+campaign, form, ad, stage, owner, value and received date. Filter by any of those (multi-select
+with counts), by date range, by "has email" / "has phone", or by free-text search; sort by any
+column; hide or show columns; select rows for bulk stage / owner changes, export (CSV) or delete.
+Clicking a source or campaign in the table filters by it; clicking a name opens the lead. The view
+(filters, columns, sort) is remembered per organization in the browser. Attribution comes from
+`crm_deals.campaign / form_name / ad_name / attributes`, which the inbound webhook fills from the
+payload (`campaign`, `form`, `ad` and every other field).
+
 ## Inbound lead webhooks
 
 Create a webhook in CRM → Inbound leads. It gets a URL like

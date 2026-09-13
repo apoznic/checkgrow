@@ -509,7 +509,11 @@ export type Database = {
       crm_deals: {
         Row: {
           approval_status: string
+          ad_name: string | null
           archived_from: string | null
+          attributes: Json
+          campaign: string | null
+          form_name: string | null
           assigned_to: string | null
           closed_at: string | null
           cluster_id: string
@@ -534,7 +538,11 @@ export type Database = {
         }
         Insert: {
           approval_status?: string
+          ad_name?: string | null
           archived_from?: string | null
+          attributes?: Json
+          campaign?: string | null
+          form_name?: string | null
           assigned_to?: string | null
           closed_at?: string | null
           cluster_id: string
@@ -559,7 +567,11 @@ export type Database = {
         }
         Update: {
           approval_status?: string
+          ad_name?: string | null
           archived_from?: string | null
+          attributes?: Json
+          campaign?: string | null
+          form_name?: string | null
           assigned_to?: string | null
           closed_at?: string | null
           cluster_id?: string
