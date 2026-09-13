@@ -377,6 +377,7 @@ Deno.serve(async (req) => {
       source,
       created_by: creatorId,
       assigned_to: hook.default_assigned_to,
+      inbound_webhook_id: hook.id,
     })
     .select("id")
     .single();

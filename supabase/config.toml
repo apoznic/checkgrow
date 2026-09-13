@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.crm-automation-runner]
 verify_jwt = false
+
+[functions.crm-outbound-dispatcher]
+verify_jwt = false

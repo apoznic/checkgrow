@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Kanban, Webhook } from 'lucide-react';
+import { Kanban, Webhook, Send } from 'lucide-react';
 import { DealList } from './DealList';
 import { LeadWebhooksPanel } from './LeadWebhooksPanel';
+import { OutboundWebhooksPanel } from './OutboundWebhooksPanel';
 
 interface CrmTabProps {
   clusterId: string;
@@ -11,11 +12,11 @@ interface CrmTabProps {
   initialDealId?: string | null;
 }
 
-type CrmView = 'pipeline' | 'inbound';
+type CrmView = 'pipeline' | 'inbound' | 'outbound';
 
 const VIEW_KEY = 'crm_view';
 
-/** CRM tab: the lead pipeline plus the inbound webhooks that feed it. */
+/** CRM tab: the lead pipeline plus the inbound and outbound webhooks around it. */
 export function CrmTab({ clusterId, profileId, canManage, userRole, initialDealId }: CrmTabProps) {
   const [view, setView] = useState<CrmView>(() => (initialDealId ? 'pipeline' : (sessionStorage.getItem(VIEW_KEY) as CrmView) || 'pipeline'));
   const [openDealId, setOpenDealId] = useState<string | null>(initialDealId ?? null);
@@ -27,7 +28,8 @@ export function CrmTab({ clusterId, profileId, canManage, userRole, initialDealI
 
   const views: { id: CrmView; label: string; icon: React.ElementType }[] = [
     { id: 'pipeline', label: 'Pipeline', icon: Kanban },
-    { id: 'inbound', label: 'Inbound leads', icon: Webhook },
+    { id: 'inbound', label: 'Inbound webhooks', icon: Webhook },
+    { id: 'outbound', label: 'Outbound webhooks', icon: Send },
   ];
 
   return (
@@ -55,8 +57,15 @@ export function CrmTab({ clusterId, profileId, canManage, userRole, initialDealI
           userRole={userRole}
           initialDealId={openDealId}
         />
-      ) : (
+      ) : view === 'inbound' ? (
         <LeadWebhooksPanel
+          clusterId={clusterId}
+          profileId={profileId}
+          canManage={canManage}
+          onOpenDeal={dealId => { setOpenDealId(dealId); switchView('pipeline'); }}
+        />
+      ) : (
+        <OutboundWebhooksPanel
           clusterId={clusterId}
           profileId={profileId}
           canManage={canManage}

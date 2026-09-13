@@ -521,6 +521,7 @@ export type Database = {
           expected_close_date: string | null
           finder_bonus_percent: number | null
           id: string
+          inbound_webhook_id: string | null
           org_equity: number | null
           org_percentage: number | null
           probability: number | null
@@ -545,6 +546,7 @@ export type Database = {
           expected_close_date?: string | null
           finder_bonus_percent?: number | null
           id?: string
+          inbound_webhook_id?: string | null
           org_equity?: number | null
           org_percentage?: number | null
           probability?: number | null
@@ -569,6 +571,7 @@ export type Database = {
           expected_close_date?: string | null
           finder_bonus_percent?: number | null
           id?: string
+          inbound_webhook_id?: string | null
           org_equity?: number | null
           org_percentage?: number | null
           probability?: number | null
@@ -776,6 +779,135 @@ export type Database = {
             columns: ["webhook_id"]
             isOneToOne: false
             referencedRelation: "crm_webhooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_outbound_webhooks: {
+        Row: {
+          cluster_id: string
+          created_at: string
+          created_by: string | null
+          delivered_count: number
+          enabled: boolean
+          events: string[]
+          exclude_inbound: boolean
+          failed_count: number
+          headers: Json
+          id: string
+          last_delivered_at: string | null
+          last_status_code: number | null
+          name: string
+          payload_format: string
+          secret: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          cluster_id: string
+          created_at?: string
+          created_by?: string | null
+          delivered_count?: number
+          enabled?: boolean
+          events?: string[]
+          exclude_inbound?: boolean
+          failed_count?: number
+          headers?: Json
+          id?: string
+          last_delivered_at?: string | null
+          last_status_code?: number | null
+          name: string
+          payload_format?: string
+          secret?: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          cluster_id?: string
+          created_at?: string
+          created_by?: string | null
+          delivered_count?: number
+          enabled?: boolean
+          events?: string[]
+          exclude_inbound?: boolean
+          failed_count?: number
+          headers?: Json
+          id?: string
+          last_delivered_at?: string | null
+          last_status_code?: number | null
+          name?: string
+          payload_format?: string
+          secret?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
+      crm_outbound_deliveries: {
+        Row: {
+          attempts: number
+          cluster_id: string
+          created_at: string
+          data: Json
+          deal_id: string | null
+          delivered_at: string | null
+          event: string
+          id: string
+          last_error: string | null
+          last_status_code: number | null
+          next_attempt_at: string
+          request_body: Json | null
+          response_body: string | null
+          status: string
+          webhook_id: string
+        }
+        Insert: {
+          attempts?: number
+          cluster_id: string
+          created_at?: string
+          data?: Json
+          deal_id?: string | null
+          delivered_at?: string | null
+          event: string
+          id?: string
+          last_error?: string | null
+          last_status_code?: number | null
+          next_attempt_at?: string
+          request_body?: Json | null
+          response_body?: string | null
+          status?: string
+          webhook_id: string
+        }
+        Update: {
+          attempts?: number
+          cluster_id?: string
+          created_at?: string
+          data?: Json
+          deal_id?: string | null
+          delivered_at?: string | null
+          event?: string
+          id?: string
+          last_error?: string | null
+          last_status_code?: number | null
+          next_attempt_at?: string
+          request_body?: Json | null
+          response_body?: string | null
+          status?: string
+          webhook_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_outbound_deliveries_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_outbound_deliveries_webhook_id_fkey"
+            columns: ["webhook_id"]
+            isOneToOne: false
+            referencedRelation: "crm_outbound_webhooks"
             referencedColumns: ["id"]
           },
         ]

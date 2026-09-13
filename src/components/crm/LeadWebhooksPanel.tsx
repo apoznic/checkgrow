@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Plus, Loader2, Webhook, Copy, Check, RefreshCw, Trash2, Power, PowerOff,
-  Inbox, AlertCircle, ExternalLink, ChevronDown, ChevronRight, Code2, ShieldCheck, KeyRound, Upload, FileSpreadsheet,
+  Inbox, AlertCircle, ExternalLink, ChevronDown, ChevronRight, Code2, ShieldCheck, KeyRound, Upload, FileSpreadsheet, Pencil,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
@@ -101,6 +101,8 @@ export function LeadWebhooksPanel({ clusterId, profileId, canManage, onOpenDeal 
   const [secretDraft, setSecretDraft] = useState('');
   const [secretSaving, setSecretSaving] = useState(false);
   const [importState, setImportState] = useState<ImportState | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ name: '', source_label: '' });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importTargetRef = useRef<string | null>(null);
   const cancelImportRef = useRef(false);
@@ -251,6 +253,20 @@ export function LeadWebhooksPanel({ clusterId, profileId, canManage, onOpenDeal 
       toast({ title: 'Could not remove the signing secret', description: error.message, variant: 'destructive' });
       return;
     }
+    loadWebhooks();
+  };
+
+  const startEdit = (hook: WebhookRow) => {
+    setEditId(hook.id);
+    setEditForm({ name: hook.name, source_label: hook.source_label || '' });
+  };
+
+  const handleSaveEdit = async (hook: WebhookRow) => {
+    const name = editForm.name.trim();
+    if (!name) return;
+    const { error } = await supabase.from('crm_webhooks').update({ name, source_label: editForm.source_label.trim() || name }).eq('id', hook.id);
+    if (error) { toast({ title: 'Could not save', description: error.message, variant: 'destructive' }); return; }
+    setEditId(null);
     loadWebhooks();
   };
 
@@ -440,7 +456,21 @@ export function LeadWebhooksPanel({ clusterId, profileId, canManage, onOpenDeal 
               <div key={hook.id} className="glass-panel">
                 <div className="p-5 space-y-4">
                   <div className="flex items-start justify-between gap-3 flex-wrap">
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
+                      {editId === hook.id ? (
+                        <div className="flex flex-wrap gap-2 items-end">
+                          <div className="space-y-1">
+                            <label className="text-[11px] font-medium text-muted-foreground">Name</label>
+                            <GlassInput value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} autoFocus onKeyDown={e => { if (e.key === 'Enter') handleSaveEdit(hook); if (e.key === 'Escape') setEditId(null); }} />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[11px] font-medium text-muted-foreground">Source label on leads</label>
+                            <GlassInput value={editForm.source_label} onChange={e => setEditForm(f => ({ ...f, source_label: e.target.value }))} onKeyDown={e => { if (e.key === 'Enter') handleSaveEdit(hook); if (e.key === 'Escape') setEditId(null); }} />
+                          </div>
+                          <GlassButtonNew variant="primary" size="sm" onClick={() => handleSaveEdit(hook)} disabled={!editForm.name.trim()}>Save</GlassButtonNew>
+                          <GlassButtonNew variant="ghost" size="sm" onClick={() => setEditId(null)}>Cancel</GlassButtonNew>
+                        </div>
+                      ) : (
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-semibold">{hook.name}</h3>
                         <span className="inline-flex items-center rounded-full bg-accent px-2 py-0.5 text-xs font-medium text-accent-foreground border border-[#CFC3D9]">
@@ -450,6 +480,7 @@ export function LeadWebhooksPanel({ clusterId, profileId, canManage, onOpenDeal 
                           {hook.enabled ? 'Active' : 'Paused'}
                         </span>
                       </div>
+                      )}
                       <p className="text-xs text-muted-foreground mt-1">
                         {hook.received_count} lead{hook.received_count === 1 ? '' : 's'} received
                         {hook.last_received_at ? ` · last ${formatDistanceToNow(new Date(hook.last_received_at), { addSuffix: true })}` : ' · nothing received yet'}
@@ -457,6 +488,9 @@ export function LeadWebhooksPanel({ clusterId, profileId, canManage, onOpenDeal 
                     </div>
                     {canManage && (
                       <div className="flex items-center gap-1">
+                        <GlassButtonNew variant="ghost" size="sm" onClick={() => startEdit(hook)} leftIcon={<Pencil className="w-3.5 h-3.5" />}>
+                          Edit
+                        </GlassButtonNew>
                         <GlassButtonNew variant="ghost" size="sm" onClick={() => handleToggle(hook)} leftIcon={hook.enabled ? <PowerOff className="w-3.5 h-3.5" /> : <Power className="w-3.5 h-3.5" />}>
                           {hook.enabled ? 'Pause' : 'Enable'}
                         </GlassButtonNew>

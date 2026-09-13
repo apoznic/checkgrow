@@ -77,6 +77,7 @@ Edge functions in `supabase/functions`:
 | `registry-webhook` | Public endpoint that appends rows to a registry |
 | `crm-lead-webhook` | Public endpoint that turns a POSTed lead into a CRM contact + deal and enrols it in matching automations |
 | `crm-automation-runner` | Executes due automation steps; woken by the database scheduler every 5 minutes, by the webhook, or from the app |
+| `crm-outbound-dispatcher` | Sends queued outbound webhook deliveries with signatures and retries; woken by a database trigger, the scheduler every 5 minutes, or from the app |
 
 Function secrets to set in the Supabase dashboard (Edge Functions → Secrets):
 
@@ -107,6 +108,28 @@ Recognised fields (case-insensitive): `name` or `first_name`/`last_name`, `email
 `answers`, `form_response`) are unwrapped. Contacts are matched by email within the
 organization; the webhook's default owner is notified in-app. The token can also be sent as an
 `x-webhook-token` header or as the last path segment.
+
+## Outbound webhooks
+
+CRM → Outbound webhooks. Add a destination URL, pick the events (lead created / updated /
+stage changed / won / lost), choose the payload shape and optionally add headers. A database
+trigger queues a delivery for every matching change and wakes the `crm-outbound-dispatcher`
+function; failed deliveries retry after 1, 5, 15, 60, 360 and 1440 minutes. Each request carries
+`x-webhook-id`, `x-webhook-timestamp`, `x-webhook-signature` (`v1,<base64 HMAC-SHA256 of
+id.timestamp.body>`), `x-signature` (`sha256=<hex HMAC of the body>`) and `x-webhook-event`.
+"Send test" posts a sample lead; "Retry" re-sends a failed delivery. By default a destination
+skips leads that arrived through an inbound webhook, so two connected systems never echo each
+other. Payload shapes:
+
+```json
+{ "event": "lead.created", "sent_at": "…", "delivery_id": "…",
+  "lead": { "id", "title", "description", "stage", "previous_stage", "value", "currency", "probability",
+            "source", "created_at", "updated_at", "closed_at",
+            "assigned_to": { "id", "name" }, "contact": { "id", "name", "email", "phone", "company", "position" } } }
+```
+
+Flat (for form-style receivers): `{ event, delivery_id, external_id, name, email, phone, company,
+position, subject, message, value, currency, stage, previous_stage, source, assigned_to }`.
 
 ### Importing existing leads (CSV)
 
