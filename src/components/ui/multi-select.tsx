@@ -75,7 +75,7 @@ export function MultiSelect({ label, options, selected, onChange, className, emp
         )}
       </button>
       {open && (
-        <div className="absolute z-30 mt-1 w-64 rounded-xl border border-border bg-card shadow-lg p-2">
+        <div className="absolute z-50 mt-1 w-64 rounded-xl border border-border bg-card shadow-lg p-2">
           {options.length > 7 && (
             <div className="relative mb-2">
               <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />

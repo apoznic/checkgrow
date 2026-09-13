@@ -479,7 +479,7 @@ export default function AdminDashboard() {
   return (
     <FloatingLayout>
       <AppTopBar />
-      <div className="h-full flex min-h-screen relative max-w-7xl mx-auto">
+      <div className="h-full flex min-h-screen relative max-w-[1600px] mx-auto">
         {/* Mobile Menu Button */}
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -529,7 +529,7 @@ export default function AdminDashboard() {
                   onClick={() => selectCluster(cluster.id)}
                   className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-colors ${
                     selectedCluster === cluster.id
-                      ? 'bg-accent/10 text-accent font-medium'
+                      ? 'bg-accent text-foreground font-semibold'
                       : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
                   }`}
                 >
@@ -541,7 +541,7 @@ export default function AdminDashboard() {
               
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-primary hover:bg-primary/10 transition-colors border border-dashed border-primary/30"
+                className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors border border-dashed border-border"
               >
                 <Plus className="w-4 h-4" />
                 <span>New Organization</span>
@@ -558,7 +558,7 @@ export default function AdminDashboard() {
 
           {/* Navigation Tabs */}
           <div className="flex-1 overflow-y-auto">
-            <h3 className="text-xs font-medium text-primary mb-2 uppercase tracking-wider">
+            <h3 className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">
               Workspace
             </h3>
             <div className="space-y-1 mb-5 pb-4 border-b border-border/30">
@@ -570,10 +570,10 @@ export default function AdminDashboard() {
                     onClick={() => handleTabClick(tab.id)}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors relative border ${
                       activeTab === tab.id
-                        ? 'bg-primary/15 text-primary border-primary/30 font-semibold'
+                        ? 'bg-[#2A2722] text-[#F7F7F5] border-[#2A2722] font-semibold'
                         : tab.glow
-                          ? 'text-primary bg-primary/10 border-primary/20 hover:bg-primary/15'
-                          : 'text-primary bg-primary/5 border-primary/15 hover:bg-primary/10 font-medium'
+                          ? 'text-foreground bg-accent border-[#CFC3D9] hover:bg-accent/70 font-medium'
+                          : 'text-foreground bg-card border-border hover:bg-secondary font-medium'
                     }`}
                   >
                     {tab.glow && activeTab !== tab.id && (
@@ -603,9 +603,9 @@ export default function AdminDashboard() {
                     onClick={() => handleTabClick(tab.id)}
                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-colors relative ${
                       activeTab === tab.id
-                        ? 'bg-accent/10 text-accent font-medium'
+                        ? 'bg-accent text-foreground font-semibold'
                         : tab.glow
-                          ? 'text-accent bg-accent/5 hover:bg-accent/10'
+                          ? 'text-foreground bg-accent/60 hover:bg-accent'
                           : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
                     }`}
                   >
@@ -616,7 +616,7 @@ export default function AdminDashboard() {
                     <span className="flex-1 text-left">{tab.label}</span>
                     {tab.badge != null && (
                       <span className={`px-1.5 py-0.5 rounded-full text-xs font-semibold ${
-                        tab.glow ? 'bg-primary text-primary-foreground' : 'bg-accent text-accent-foreground'
+                        tab.glow ? 'bg-[#2A2722] text-[#F7F7F5]' : 'bg-accent text-accent-foreground'
                       }`}>
                         {tab.badge}
                       </span>

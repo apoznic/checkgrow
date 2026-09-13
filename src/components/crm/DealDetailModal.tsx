@@ -330,7 +330,7 @@ export function DealDetailModal({ deal, profileId, clusterId, orgMembers, onClos
             };
             walk((deal.attributes as Record<string, unknown>) || {});
             const primary = [['Source', deal.source], ['Campaign', deal.campaign], ['Form', deal.form_name], ['Ad', deal.ad_name]].filter(([, v]) => v) as [string, string][];
-            const skip = new Set(['name', 'email', 'phone', 'company', 'message', 'campaign', 'form', 'form_name', 'ad', 'ad_name', 'source', 'subject', 'title']);
+            const skip = new Set(['name', 'email', 'phone', 'company', 'message', 'campaign', 'campaign_name', 'form', 'form_name', 'ad', 'ad_name', 'source', 'subject', 'title', 'id', 'external_id', 'lead_id', 'created_at', 'updated_at', 'sent_at', 'delivery_id', 'event', 'full_name', 'phone_number']);
             const extra = flat.filter(([k]) => !skip.has(k.toLowerCase()));
             if (primary.length === 0 && extra.length === 0) return null;
             return (
@@ -350,14 +350,18 @@ export function DealDetailModal({ deal, profileId, clusterId, orgMembers, onClos
                     </div>
                   )}
                   {extra.length > 0 && (
-                    <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs max-h-40 overflow-auto">
-                      {extra.map(([k, v]) => (
-                        <div key={k} className="contents">
-                          <dt className="text-muted-foreground truncate">{k}</dt>
-                          <dd className="break-words">{v}</dd>
-                        </div>
-                      ))}
-                    </dl>
+                    <div className="max-h-44 overflow-auto rounded-lg border border-border/40 bg-card">
+                      <table className="w-full text-xs">
+                        <tbody>
+                          {extra.map(([k, v]) => (
+                            <tr key={k} className="border-b border-border/30 last:border-0 align-top">
+                              <td className="px-2 py-1 text-muted-foreground whitespace-nowrap w-[38%]">{k}</td>
+                              <td className="px-2 py-1 break-all">{v}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   )}
                 </div>
               </div>

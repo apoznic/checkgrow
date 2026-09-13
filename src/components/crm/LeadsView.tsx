@@ -38,7 +38,7 @@ interface Filters {
   hasPhone: boolean;
 }
 
-type ColumnKey = 'lead' | 'email' | 'phone' | 'title' | 'source' | 'campaign' | 'form' | 'ad' | 'stage' | 'owner' | 'value' | 'received' | 'updated';
+type ColumnKey = 'lead' | 'contact' | 'title' | 'source' | 'campaign' | 'form' | 'ad' | 'stage' | 'owner' | 'value' | 'received' | 'updated';
 type SortKey = 'lead' | 'source' | 'campaign' | 'form' | 'stage' | 'owner' | 'value' | 'received' | 'updated';
 
 const EMPTY_FILTERS: Filters = { q: '', stages: [], sources: [], campaigns: [], forms: [], owners: [], date: 'any', from: '', to: '', hasEmail: false, hasPhone: false };
@@ -54,14 +54,15 @@ const STAGES: { value: string; label: string; chip: string }[] = [
 ];
 const stageMeta = (s: string) => STAGES.find(x => x.value === s) || { value: s, label: s, chip: 'bg-secondary text-muted-foreground' };
 
+const COLUMN_WIDTH: Record<ColumnKey, number> = { lead: 20, contact: 20, title: 16, source: 10, campaign: 15, form: 11, ad: 11, stage: 10, owner: 11, value: 7, received: 9, updated: 8 };
+
 const COLUMNS: { key: ColumnKey; label: string; sort?: SortKey; defaultOn: boolean }[] = [
   { key: 'lead', label: 'Lead', sort: 'lead', defaultOn: true },
-  { key: 'email', label: 'Email', defaultOn: true },
-  { key: 'phone', label: 'Phone', defaultOn: true },
+  { key: 'contact', label: 'Contact', defaultOn: true },
   { key: 'title', label: 'Title', defaultOn: false },
   { key: 'source', label: 'Source', sort: 'source', defaultOn: true },
   { key: 'campaign', label: 'Campaign', sort: 'campaign', defaultOn: true },
-  { key: 'form', label: 'Form', sort: 'form', defaultOn: true },
+  { key: 'form', label: 'Form', sort: 'form', defaultOn: false },
   { key: 'ad', label: 'Ad', defaultOn: false },
   { key: 'stage', label: 'Stage', sort: 'stage', defaultOn: true },
   { key: 'owner', label: 'Owner', sort: 'owner', defaultOn: true },
@@ -107,6 +108,7 @@ export function LeadsView({ clusterId, profileId, canManage, initialDealId, onOp
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [detailDeal, setDetailDeal] = useState<CRMDeal | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const [savedColumns, setSavedColumns] = useState(false);
 
   // Restore the saved view once
   useEffect(() => {
@@ -115,7 +117,7 @@ export function LeadsView({ clusterId, profileId, canManage, initialDealId, onOp
       if (raw) {
         const saved = JSON.parse(raw) as { filters?: Partial<Filters>; columns?: ColumnKey[]; sort?: { key: SortKey; dir: 'asc' | 'desc' } };
         if (saved.filters) setFilters({ ...EMPTY_FILTERS, ...saved.filters });
-        if (saved.columns?.length) setColumns(saved.columns);
+        if (saved.columns?.length) { setColumns(saved.columns.filter(c => COLUMNS.some(x => x.key === c))); setSavedColumns(true); }
         if (saved.sort) setSort(saved.sort);
       }
     } catch { /* ignore */ }
@@ -161,6 +163,10 @@ export function LeadsView({ clusterId, profileId, canManage, initialDealId, onOp
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [clusterId, loadDeals, loadMembers]);
+
+  useEffect(() => {
+    if (!savedColumns && deals.some(d => d.form_name)) setColumns(cols => (cols.includes('form') ? cols : COLUMNS.map(x => x.key).filter(k => cols.includes(k) || k === 'form')));
+  }, [deals, savedColumns]);
 
   useEffect(() => {
     if (initialDealId && deals.length) {
@@ -324,7 +330,7 @@ export function LeadsView({ clusterId, profileId, canManage, initialDealId, onOp
   };
 
   return (
-    <div className="flex flex-col gap-3 h-[calc(100vh-9.5rem)] min-h-[560px]">
+    <div className="flex flex-col gap-3 h-[calc(100vh-10rem)] min-h-[560px] text-[13px]">
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {[
@@ -334,16 +340,16 @@ export function LeadsView({ clusterId, profileId, canManage, initialDealId, onOp
           { label: 'Open pipeline', value: money(stats.pipelineValue) || '€0', sub: `${filtered.filter(d => !['won', 'lost', 'archived'].includes(d.stage)).length} open` },
           { label: 'Sources', value: String(sourceOptions.filter(o => o.value !== UNSET).length), sub: campaignOptions.filter(o => o.value !== UNSET).length + ' campaigns' },
         ].map(t => (
-          <div key={t.label} className="glass-panel px-4 py-3">
+          <div key={t.label} className="rounded-2xl bg-card shadow-sm px-4 py-2.5">
             <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{t.label}</p>
-            <p className="text-xl font-bold leading-tight mt-0.5">{t.value}</p>
+            <p className="text-lg font-bold leading-tight mt-0.5">{t.value}</p>
             <p className="text-[11px] text-muted-foreground">{t.sub}</p>
           </div>
         ))}
       </div>
 
       {/* Filters */}
-      <div className="glass-panel px-3 py-2.5 flex flex-wrap items-center gap-2">
+      <div className="relative z-20 rounded-2xl bg-card shadow-sm px-3 py-2 flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
@@ -441,20 +447,20 @@ export function LeadsView({ clusterId, profileId, canManage, initialDealId, onOp
             {activeFilterCount > 0 && <GlassButtonNew variant="secondary" size="sm" className="mt-4" onClick={() => setFilters(EMPTY_FILTERS)}>Clear filters</GlassButtonNew>}
           </div>
         ) : (
-          <table className="min-w-full text-sm border-separate border-spacing-0">
+          <table className="w-full table-fixed text-[13px] border-separate border-spacing-0">
             <thead className="sticky top-0 z-10 bg-card">
               <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-                <th className="px-3 py-2.5 border-b border-border w-8">
+                <th className="px-2.5 py-2 border-b border-border w-9">
                   <input type="checkbox" checked={allVisibleSelected} onChange={toggleAll} className="rounded border-border" aria-label="Select all" />
                 </th>
                 {visibleColumns.map(c => (
-                  <th key={c.key} className={`px-3 py-2.5 border-b border-border font-medium whitespace-nowrap ${c.key === 'value' ? 'text-right' : ''}`}>
+                  <th key={c.key} style={{ width: `${(COLUMN_WIDTH[c.key] / visibleColumns.reduce((s, x) => s + COLUMN_WIDTH[x.key], 0)) * 100}%` }} className={`px-2.5 py-2 border-b border-border font-medium whitespace-nowrap overflow-hidden text-ellipsis ${c.key === 'value' ? 'text-right' : ''}`}>
                     {c.sort ? (
                       <button onClick={() => toggleSort(c.sort!)} className="inline-flex items-center gap-1 hover:text-foreground">{c.label} <SortIcon k={c.sort} /></button>
                     ) : c.label}
                   </th>
                 ))}
-                <th className="px-3 py-2.5 border-b border-border w-10" />
+                <th className="px-2.5 py-2 border-b border-border w-8" />
               </tr>
             </thead>
             <tbody>
@@ -467,36 +473,40 @@ export function LeadsView({ clusterId, profileId, canManage, initialDealId, onOp
                       <input type="checkbox" checked={isSel} onChange={() => toggleOne(d.id)} className="rounded border-border mt-1" aria-label="Select lead" />
                     </td>
                     {visibleColumns.map(c => {
-                      const base = 'px-3 py-2 border-b border-border/60 align-top';
+                      const base = 'px-2.5 py-1.5 border-b border-border/60 align-top overflow-hidden';
                       switch (c.key) {
                         case 'lead':
                           return (
-                            <td key={c.key} className={`${base} min-w-[180px]`}>
-                              <button onClick={() => setDetailDeal(d)} className="text-left">
-                                <p className="font-medium leading-tight hover:underline">{leadName(d)}</p>
-                                {d.crm_contacts?.company && <p className="text-xs text-muted-foreground">{d.crm_contacts.company}</p>}
+                            <td key={c.key} className={`${base}`}>
+                              <button onClick={() => setDetailDeal(d)} className="text-left w-full min-w-0">
+                                <p className="font-medium leading-tight hover:underline truncate">{leadName(d)}</p>
+                                {d.crm_contacts?.company && <p className="text-xs text-muted-foreground truncate">{d.crm_contacts.company}</p>}
                               </button>
                             </td>
                           );
-                        case 'email':
-                          return <td key={c.key} className={`${base} text-xs`}>{d.crm_contacts?.email ? <a href={`mailto:${d.crm_contacts.email}`} className="hover:underline">{d.crm_contacts.email}</a> : <span className="text-muted-foreground">—</span>}</td>;
-                        case 'phone':
-                          return <td key={c.key} className={`${base} text-xs whitespace-nowrap`}>{d.crm_contacts?.phone ? <a href={`tel:${d.crm_contacts.phone}`} className="hover:underline">{d.crm_contacts.phone}</a> : <span className="text-muted-foreground">—</span>}</td>;
+                        case 'contact':
+                          return (
+                            <td key={c.key} className={`${base} text-xs`}>
+                              {d.crm_contacts?.email ? <a href={`mailto:${d.crm_contacts.email}`} className="block truncate hover:underline" title={d.crm_contacts.email}>{d.crm_contacts.email}</a> : null}
+                              {d.crm_contacts?.phone ? <a href={`tel:${d.crm_contacts.phone}`} className="block truncate text-muted-foreground hover:underline">{d.crm_contacts.phone}</a> : null}
+                              {!d.crm_contacts?.email && !d.crm_contacts?.phone && <span className="text-muted-foreground">—</span>}
+                            </td>
+                          );
                         case 'title':
-                          return <td key={c.key} className={`${base} text-xs max-w-[240px] truncate`} title={d.title}>{d.title}</td>;
+                          return <td key={c.key} className={`${base} text-xs truncate`} title={d.title}>{d.title}</td>;
                         case 'source':
-                          return <td key={c.key} className={`${base} text-xs`}>{d.source ? <button onClick={() => setFilters(f => ({ ...f, sources: [d.source!] }))} className="inline-flex rounded-full bg-accent px-2 py-0.5 text-[11px] font-medium text-accent-foreground border border-[#CFC3D9] hover:opacity-80" title="Filter by this source">{d.source}</button> : <span className="text-muted-foreground">—</span>}</td>;
+                          return <td key={c.key} className={`${base} text-xs`}>{d.source ? <button onClick={() => setFilters(f => ({ ...f, sources: [d.source!] }))} className="inline-flex max-w-full truncate rounded-full bg-accent px-2 py-0.5 text-[11px] font-medium text-accent-foreground border border-[#CFC3D9] hover:opacity-80" title="Filter by this source">{d.source}</button> : <span className="text-muted-foreground">—</span>}</td>;
                         case 'campaign':
-                          return <td key={c.key} className={`${base} text-xs max-w-[200px]`}>{d.campaign ? <button onClick={() => setFilters(f => ({ ...f, campaigns: [d.campaign!] }))} className="truncate block max-w-[200px] text-left hover:underline" title="Filter by this campaign">{d.campaign}</button> : <span className="text-muted-foreground">—</span>}</td>;
+                          return <td key={c.key} className={`${base} text-xs`}>{d.campaign ? <button onClick={() => setFilters(f => ({ ...f, campaigns: [d.campaign!] }))} className="truncate block w-full text-left hover:underline" title={`${d.campaign} (click to filter)`}>{d.campaign}</button> : <span className="text-muted-foreground">—</span>}</td>;
                         case 'form':
-                          return <td key={c.key} className={`${base} text-xs max-w-[160px] truncate`} title={d.form_name || ''}>{d.form_name || <span className="text-muted-foreground">—</span>}</td>;
+                          return <td key={c.key} className={`${base} text-xs truncate`} title={d.form_name || ''}>{d.form_name || <span className="text-muted-foreground">—</span>}</td>;
                         case 'ad':
-                          return <td key={c.key} className={`${base} text-xs max-w-[160px] truncate`} title={d.ad_name || ''}>{d.ad_name || <span className="text-muted-foreground">—</span>}</td>;
+                          return <td key={c.key} className={`${base} text-xs truncate`} title={d.ad_name || ''}>{d.ad_name || <span className="text-muted-foreground">—</span>}</td>;
                         case 'stage':
                           return (
                             <td key={c.key} className={`${base}`}>
                               {canManage ? (
-                                <select value={d.stage} onChange={e => setStage(d.id, e.target.value)} className={`h-7 rounded-full px-2 pr-6 text-[11px] font-medium border-0 cursor-pointer appearance-none ${sm.chip}`} style={{ backgroundImage: 'none' }}>
+                                <select value={d.stage} onChange={e => setStage(d.id, e.target.value)} className={`h-7 w-full max-w-[110px] rounded-full px-2 pr-5 text-[11px] font-medium border-0 cursor-pointer appearance-none ${sm.chip}`} style={{ backgroundImage: 'none' }}>
                                   {STAGES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                                 </select>
                               ) : (
@@ -508,7 +518,7 @@ export function LeadsView({ clusterId, profileId, canManage, initialDealId, onOp
                           return (
                             <td key={c.key} className={`${base} text-xs`}>
                               {canManage ? (
-                                <select value={d.assigned_to || ''} onChange={e => setOwner(d.id, e.target.value)} className="h-7 max-w-[150px] rounded-md bg-transparent border border-transparent hover:border-border px-1 text-xs cursor-pointer">
+                                <select value={d.assigned_to || ''} onChange={e => setOwner(d.id, e.target.value)} className="h-7 w-full max-w-[130px] truncate rounded-md bg-transparent border border-transparent hover:border-border px-1 text-xs cursor-pointer">
                                   <option value="">Unassigned</option>
                                   {members.map(m => <option key={m.id} value={m.id}>{m.full_name || 'Unknown'}</option>)}
                                 </select>
@@ -518,7 +528,7 @@ export function LeadsView({ clusterId, profileId, canManage, initialDealId, onOp
                         case 'value':
                           return <td key={c.key} className={`${base} text-xs text-right tabular-nums whitespace-nowrap`}>{money(d.value, d.currency) || <span className="text-muted-foreground">—</span>}</td>;
                         case 'received':
-                          return <td key={c.key} className={`${base} text-xs whitespace-nowrap`} title={format(new Date(d.created_at), 'PPpp')}><span>{format(new Date(d.created_at), 'd MMM yyyy')}</span><span className="block text-[11px] text-muted-foreground">{formatDistanceToNow(new Date(d.created_at), { addSuffix: true })}</span></td>;
+                          return <td key={c.key} className={`${base} text-xs whitespace-nowrap`} title={format(new Date(d.created_at), 'PPpp')}><span>{format(new Date(d.created_at), 'd MMM')}</span><span className="block text-[11px] text-muted-foreground">{formatDistanceToNow(new Date(d.created_at), { addSuffix: true }).replace('about ', '')}</span></td>;
                         case 'updated':
                           return <td key={c.key} className={`${base} text-xs whitespace-nowrap text-muted-foreground`} title={format(new Date(d.updated_at), 'PPpp')}>{formatDistanceToNow(new Date(d.updated_at), { addSuffix: true })}</td>;
                         default:
