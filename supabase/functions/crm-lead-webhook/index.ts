@@ -7,7 +7,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
  *   (or header `x-webhook-token`, or the token as the last path segment)
  *
  * Accepts JSON, form-encoded, or multipart bodies. Common wrappers
- * (data / fields / answers / form_response / body / lead) are unwrapped.
+ * (data / fields / answers / form_response / body / lead / payload) are unwrapped,
+ * including event envelopes such as { event: "lead.created", lead: {...} }.
  * Recognised fields (case-insensitive, first match wins):
  *   name | full_name | contact | first_name + last_name
  *   email, phone | tel | mobile, company | organization | organisation
@@ -234,10 +235,13 @@ Deno.serve(async (req) => {
     }
   }
 
-  // Unwrap common envelopes
-  for (const key of ["data", "fields", "answers", "form_response", "body", "lead", "payload"]) {
+  // Unwrap common envelopes, e.g. Checkgrow's
+  // { event: "lead.created", sent_at, delivery_id, lead: { id, name, email, ... } }
+  const eventName = str(payload.event) || str(payload.event_type) || str(payload.type);
+  const looksLikeLead = (o: Payload) => ["name", "email", "full_name", "first_name", "company", "phone"].some((k) => norm(k) in Object.fromEntries(Object.keys(o).map((x) => [norm(x), true])));
+  for (const key of ["data", "fields", "answers", "form_response", "body", "lead", "payload", "contact", "submission"]) {
     const inner = payload[key];
-    if (inner && typeof inner === "object" && !Array.isArray(inner) && Object.keys(payload).length <= 3) {
+    if (inner && typeof inner === "object" && !Array.isArray(inner) && (Object.keys(payload).length <= 3 || eventName || looksLikeLead(inner as Payload))) {
       payload = inner as Payload;
       break;
     }
@@ -264,7 +268,9 @@ Deno.serve(async (req) => {
   const subject = take(["subject", "deal", "deal_title", "project", "topic", "title", "lead_title"]);
   const message = take(["message", "notes", "description", "details", "comment", "comments", "inquiry"]);
   const value = toNumber(take(["value", "amount", "budget", "deal_value"]));
-  const source = take(["source", "utm_source", "lead_source", "channel"]) || hook.source_label || hook.name;
+  const GENERIC_SOURCES = new Set(["webhook", "webhooks", "api", "form", "forms", "manual", "import", "other", "unknown", "inbound"]);
+  const rawSource = take(["source", "utm_source", "lead_source", "channel"]);
+  const source = (rawSource && !GENERIC_SOURCES.has(rawSource.toLowerCase()) ? rawSource : null) || hook.source_label || hook.name;
 
   if (!name && !email && !company && !subject) {
     await supabase.from("crm_webhook_events").insert({
@@ -283,7 +289,15 @@ Deno.serve(async (req) => {
       .eq("external_id", externalId)
       .maybeSingle();
     if (existing) {
-      return json({ ok: true, duplicate: true, deal_id: existing.deal_id, contact_id: existing.contact_id });
+      if (existing.contact_id && (phone || company || position || name)) {
+        const patch: Record<string, unknown> = {};
+        if (phone) patch.phone = phone;
+        if (company) patch.company = company;
+        if (position) patch.position = position;
+        if (name) patch.name = name;
+        await supabase.from("crm_contacts").update(patch).eq("id", existing.contact_id);
+      }
+      return json({ ok: true, duplicate: true, event: eventName, deal_id: existing.deal_id, contact_id: existing.contact_id });
     }
   }
 
