@@ -18,6 +18,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
  *   x-signature           sha256=<hex HMAC-SHA256 of the body>
  *   x-webhook-event       event name
  * Retries: 1, 5, 15, 60, 360, 1440 minutes; after 6 attempts the delivery is failed.
+ * A 4xx response (except 408 / 425 / 429) fails immediately: the receiver rejected the payload.
  */
 
 const corsHeaders = {
@@ -154,7 +155,10 @@ Deno.serve(async (req) => {
 
     const attempt = d.attempts + 1;
     const fail = async (error: string, statusCode: number | null, responseBody: string | null, requestBody: unknown) => {
-      const exhausted = attempt >= MAX_ATTEMPTS;
+      // A 4xx (other than timeout / rate limit) means the receiver rejected the payload itself;
+      // retrying the same body cannot help, so fail it right away with the receiver's message.
+      const rejected = statusCode !== null && statusCode >= 400 && statusCode < 500 && ![408, 425, 429].includes(statusCode);
+      const exhausted = rejected || attempt >= MAX_ATTEMPTS;
       await admin.from("crm_outbound_deliveries").update({
         attempts: attempt,
         status: exhausted ? "failed" : "pending",
@@ -245,7 +249,9 @@ Deno.serve(async (req) => {
         }).eq("id", hook.id);
         results.push({ delivery: d.id, status: "delivered", code: res.status });
       } else {
-        await fail(`HTTP ${res.status}`, res.status, text, payload);
+        let detail = text.trim();
+        try { const parsed = JSON.parse(text); detail = String(parsed.error ?? parsed.message ?? parsed.detail ?? text).trim(); } catch { /* not JSON */ }
+        await fail(detail ? `HTTP ${res.status}: ${detail.slice(0, 200)}` : `HTTP ${res.status}`, res.status, text, payload);
       }
     } catch (e) {
       const msg = e instanceof Error ? (e.name === "TimeoutError" ? "Timed out after 10s" : e.message) : String(e);
