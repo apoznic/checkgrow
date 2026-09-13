@@ -362,6 +362,7 @@ export type Database = {
           org_percentage: number | null
           probability: number | null
           project_id: string | null
+          source: string | null
           stage: Database["public"]["Enums"]["deal_stage"]
           title: string
           updated_at: string
@@ -385,6 +386,7 @@ export type Database = {
           org_percentage?: number | null
           probability?: number | null
           project_id?: string | null
+          source?: string | null
           stage?: Database["public"]["Enums"]["deal_stage"]
           title: string
           updated_at?: string
@@ -408,6 +410,7 @@ export type Database = {
           org_percentage?: number | null
           probability?: number | null
           project_id?: string | null
+          source?: string | null
           stage?: Database["public"]["Enums"]["deal_stage"]
           title?: string
           updated_at?: string
@@ -542,6 +545,144 @@ export type Database = {
             columns: ["deal_id"]
             isOneToOne: false
             referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_webhook_events: {
+        Row: {
+          cluster_id: string
+          contact_id: string | null
+          created_at: string
+          deal_id: string | null
+          error: string | null
+          external_id: string | null
+          id: string
+          payload: Json
+          status: string
+          webhook_id: string
+        }
+        Insert: {
+          cluster_id: string
+          contact_id?: string | null
+          created_at?: string
+          deal_id?: string | null
+          error?: string | null
+          external_id?: string | null
+          id?: string
+          payload?: Json
+          status?: string
+          webhook_id: string
+        }
+        Update: {
+          cluster_id?: string
+          contact_id?: string | null
+          created_at?: string
+          deal_id?: string | null
+          error?: string | null
+          external_id?: string | null
+          id?: string
+          payload?: Json
+          status?: string
+          webhook_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_webhook_events_cluster_id_fkey"
+            columns: ["cluster_id"]
+            isOneToOne: false
+            referencedRelation: "clusters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_webhook_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_webhook_events_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_webhook_events_webhook_id_fkey"
+            columns: ["webhook_id"]
+            isOneToOne: false
+            referencedRelation: "crm_webhooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_webhooks: {
+        Row: {
+          cluster_id: string
+          created_at: string
+          created_by: string | null
+          default_assigned_to: string | null
+          default_stage: Database["public"]["Enums"]["deal_stage"]
+          enabled: boolean
+          id: string
+          last_received_at: string | null
+          name: string
+          received_count: number
+          source_label: string | null
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          cluster_id: string
+          created_at?: string
+          created_by?: string | null
+          default_assigned_to?: string | null
+          default_stage?: Database["public"]["Enums"]["deal_stage"]
+          enabled?: boolean
+          id?: string
+          last_received_at?: string | null
+          name: string
+          received_count?: number
+          source_label?: string | null
+          token?: string
+          updated_at?: string
+        }
+        Update: {
+          cluster_id?: string
+          created_at?: string
+          created_by?: string | null
+          default_assigned_to?: string | null
+          default_stage?: Database["public"]["Enums"]["deal_stage"]
+          enabled?: boolean
+          id?: string
+          last_received_at?: string | null
+          name?: string
+          received_count?: number
+          source_label?: string | null
+          token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_webhooks_cluster_id_fkey"
+            columns: ["cluster_id"]
+            isOneToOne: false
+            referencedRelation: "clusters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_webhooks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_webhooks_default_assigned_to_fkey"
+            columns: ["default_assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1397,6 +1538,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      bump_webhook_counter: { Args: { _webhook_id: string }; Returns: undefined }
       current_profile_id: { Args: never; Returns: string }
       deal_cluster: { Args: { _deal_id: string }; Returns: string }
       has_org_role: {

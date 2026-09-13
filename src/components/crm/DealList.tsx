@@ -72,7 +72,7 @@ export function DealList({ clusterId, profileId, canManage, userRole, initialDea
   const [showModal, setShowModal] = useState(false);
   const [editingDeal, setEditingDeal] = useState<CRMDeal | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'kanban' | 'table'>(() => (localStorage.getItem('deals_view_mode') as 'list' | 'kanban' | 'table') || 'kanban');
+  const [viewMode, setViewMode] = useState<'list' | 'kanban' | 'table'>(() => (localStorage.getItem('deals_view_mode') as 'list' | 'kanban' | 'table') || 'table');
   useEffect(() => { localStorage.setItem('deals_view_mode', viewMode); }, [viewMode]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStage, setFilterStage] = useState<DealStage | 'all'>('all');
@@ -750,6 +750,9 @@ export function DealList({ clusterId, profileId, canManage, userRole, initialDea
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-1">
                       <p className="font-medium truncate">{deal.title}</p>
+                      {deal.source && (
+                        <span className="mt-1 inline-flex items-center rounded-full bg-accent px-2 py-0.5 text-[10px] font-medium text-accent-foreground">{deal.source}</span>
+                      )}
                       <Badge className={`${stageInfo?.bgColor} ${stageInfo?.color} border-0`}>
                         {stageInfo?.label}
                       </Badge>

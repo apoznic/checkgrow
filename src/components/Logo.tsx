@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
 interface LogoProps {
@@ -7,54 +6,49 @@ interface LogoProps {
   linkTo?: string;
 }
 
+/** Flat CheckGrow mark: periwinkle tile with a white check + growth arrow. */
 export function Logo({ size = 'md', showText = true, linkTo = '/dashboard' }: LogoProps) {
   const navigate = useNavigate();
   const sizes = {
-    sm: { icon: 32, text: 'text-xl' },
-    md: { icon: 40, text: 'text-2xl' },
-    lg: { icon: 56, text: 'text-4xl' },
+    sm: { icon: 32, text: 'text-xl', radius: 'rounded-md' },
+    md: { icon: 40, text: 'text-2xl', radius: 'rounded-lg' },
+    lg: { icon: 56, text: 'text-4xl', radius: 'rounded-xl' },
   };
 
-  const { icon, text } = sizes[size];
+  const { icon, text, radius } = sizes[size];
 
   return (
-    <motion.div 
-      className="flex items-center gap-3 cursor-pointer"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
+    <div
+      className="flex items-center gap-3 cursor-pointer select-none"
       onClick={() => navigate(linkTo)}
       role="button"
       tabIndex={0}
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') navigate(linkTo); }}
     >
-      {/* Check-mark + growth logo mark */}
-      <div 
-        className="relative flex items-center justify-center rounded-xl overflow-hidden"
+      <div
+        className={`flex items-center justify-center bg-primary ${radius}`}
         style={{ width: icon, height: icon }}
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-primary to-primary/70 opacity-90" />
-        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-white/10" />
         <svg
           viewBox="0 0 24 24"
           fill="none"
-          className="relative z-10 w-1/2 h-1/2"
-          stroke="currentColor"
+          className="w-1/2 h-1/2"
+          stroke="#FFFFFF"
           strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
         >
-          <path d="M4 13l4 4L14 9" className="text-primary-foreground" />
-          <path d="M13 6h6v6" className="text-primary-foreground opacity-60" />
-          <path d="M19 6l-6 6" className="text-primary-foreground opacity-60" />
+          <path d="M4 13l4 4L14 9" />
+          <path d="M13 6h6v6" opacity="0.7" />
+          <path d="M19 6l-6 6" opacity="0.7" />
         </svg>
       </div>
-      
+
       {showText && (
-        <span className={`font-display font-semibold tracking-tight ${text}`}>
-          <span className="gradient-text-warm">Check</span>
-          <span className="text-foreground">Grow</span>
+        <span className={`font-display font-bold tracking-tight text-foreground ${text}`}>
+          CheckGrow
         </span>
       )}
-    </motion.div>
+    </div>
   );
 }

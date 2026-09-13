@@ -103,8 +103,8 @@ export function AvatarUpload({ userId, currentAvatarUrl, onUploadComplete, size 
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-            <User className="w-1/2 h-1/2 text-primary-foreground" />
+          <div className="w-full h-full bg-accent flex items-center justify-center">
+            <User className="w-1/2 h-1/2 text-accent-foreground" />
           </div>
         )}
         

@@ -23,7 +23,7 @@ const PERMISSIONS = [
   { key: 'tab_announcements', label: 'Newsletter', section: 'General Tabs', description: 'Announcements, newsletter, and task reminders' },
 
   // CRM Tabs
-  { key: 'tab_deals', label: 'Sales Leads', section: 'CRM Tabs', description: 'Sales lead pipeline' },
+  { key: 'tab_deals', label: 'CRM', section: 'CRM Tabs', description: 'Lead pipeline and inbound webhooks' },
 
   // Member Management
   { key: 'action_manage_members', label: 'Manage Members', section: 'Member Management', description: 'Approve, reject, and remove organization members' },

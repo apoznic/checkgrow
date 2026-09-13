@@ -13,7 +13,7 @@ const levelColors = {
   beginner: 'bg-blue-500/20 border-blue-500/40 text-blue-300',
   intermediate: 'bg-primary/15 border-primary/30 text-primary',
   advanced: 'bg-accent/20 border-accent/40 text-accent',
-  expert: 'bg-gradient-to-r from-primary/20 to-accent/20 border-primary/40 text-foreground',
+  expert: 'bg-accent border-[#CFC3D9] text-accent-foreground',
 };
 
 export function SkillBadge({ skill, level = 'intermediate', onRemove, className }: SkillBadgeProps) {

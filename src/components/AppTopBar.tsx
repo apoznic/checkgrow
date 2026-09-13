@@ -56,7 +56,7 @@ export function AppTopBar({ onOpenSettings, showLogo = true, userName, avatarUrl
           </button>
           <button onClick={() => goToTab(navigate, 'deals')} className={navButton}>
             <TrendingUp className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Sales Leads</span>
+            <span className="hidden sm:inline">CRM</span>
           </button>
         </div>
 

@@ -23,7 +23,7 @@ import { OrgIntegrations } from '@/components/organization/OrgIntegrations';
 import { RolePermissions } from '@/components/organization/RolePermissions';
 import { SettingsHub } from '@/components/organization/SettingsHub';
 import { MyAssignments, useAssignmentCounts } from '@/components/organization/MyAssignments';
-import { DealList } from '@/components/crm';
+import { CrmTab } from '@/components/crm/CrmTab';
 import { RegistryPanel } from '@/components/organization/RegistryPanel';
 
 
@@ -65,8 +65,8 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<Tab>(() => {
     const saved = sessionStorage.getItem('admin_active_tab');
     // Legacy defaults (overview, projects) now land on the Members board
-    if (saved === 'overview' || saved === 'projects') return 'team';
-    return (saved as Tab) || 'team';
+    if (saved === 'overview' || saved === 'projects') return 'deals';
+    return (saved as Tab) || 'deals';
   });
   const [deepLinkItemId, setDeepLinkItemId] = useState<string | null>(null);
   const [profileId, setProfileId] = useState<string | null>(null);
@@ -386,9 +386,9 @@ export default function AdminDashboard() {
   const currentCluster = allClusters.find(c => c.cluster.id === selectedCluster);
 
   const tabs: { id: Tab; label: string; icon: React.ElementType; section?: string; badge?: number; hidden?: boolean; glow?: boolean; highlight?: boolean }[] = [
+    { id: 'deals', label: 'CRM', icon: TrendingUp, section: 'Workspace', hidden: !hasPermission('tab_deals'), highlight: true },
     { id: 'team', label: 'Members', icon: Users, section: 'Workspace', highlight: true },
     { id: 'my-assignments', label: 'My Life', icon: ClipboardList, section: 'Workspace', badge: assignmentCount > 0 ? assignmentCount : undefined, glow: assignmentCount > 0, highlight: true },
-    { id: 'deals', label: 'Sales Leads', icon: TrendingUp, section: 'Workspace', hidden: !hasPermission('tab_deals'), highlight: true },
     { id: 'members', label: 'Members & Skills', icon: Users, section: 'General', badge: canManageMembers && stats.pending > 0 ? stats.pending : undefined, hidden: !hasPermission('tab_members') },
     { id: 'announcements', label: 'Newsletter', icon: Megaphone, section: 'General', hidden: !hasPermission('tab_announcements') },
     { id: 'registry', label: 'Registry', icon: Database, section: 'General', hidden: !['owner','admin'].includes(effectiveRole) },
@@ -422,7 +422,7 @@ export default function AdminDashboard() {
       case 'team':
         return <MemberTaskBoard clusterId={selectedCluster} profileId={profileId} canManage={canManageContent} />;
       case 'deals':
-        return <DealList clusterId={selectedCluster} profileId={profileId} canManage={canManageContent} userRole={selectedRole} initialDealId={deepLinkItemId} />;
+        return <CrmTab clusterId={selectedCluster} profileId={profileId} canManage={canManageContent} userRole={selectedRole} initialDealId={deepLinkItemId} />;
       case 'registry':
         return <RegistryPanel clusterId={selectedCluster} canManage={canManageContent} />;
       case 'permissions':
@@ -504,7 +504,7 @@ export default function AdminDashboard() {
 
           {/* Portal Badge */}
           <div className="glass-panel p-3 mb-6 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent to-accent/70 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
               <Building2 className="w-5 h-5 text-accent-foreground" />
             </div>
             <div>
@@ -612,7 +612,7 @@ export default function AdminDashboard() {
                     <span className="flex-1 text-left">{tab.label}</span>
                     {tab.badge != null && (
                       <span className={`px-1.5 py-0.5 rounded-full text-xs font-semibold ${
-                        tab.glow ? 'bg-primary text-primary-foreground' : 'bg-accent/20 text-accent'
+                        tab.glow ? 'bg-primary text-primary-foreground' : 'bg-accent text-accent-foreground'
                       }`}>
                         {tab.badge}
                       </span>
@@ -639,11 +639,11 @@ export default function AdminDashboard() {
           {/* Header */}
           <header className="relative z-30 px-4 lg:px-6 py-4 border-b border-border/30">
             <div className="flex items-center gap-3 ml-10 lg:ml-0">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
                 {currentCluster?.cluster.logo_url ? (
                   <img src={currentCluster.cluster.logo_url} alt="" className="w-full h-full object-cover rounded-xl" />
                 ) : (
-                  <Building2 className="w-5 h-5 text-white" />
+                  <Building2 className="w-5 h-5 text-accent-foreground" />
                 )}
               </div>
               <div className="flex-1 min-w-0">
@@ -703,8 +703,8 @@ export default function AdminDashboard() {
               onClick={e => e.stopPropagation()}
             >
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                  <Building2 className="w-5 h-5 text-white" />
+                <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
+                  <Building2 className="w-5 h-5 text-accent-foreground" />
                 </div>
                 <div>
                   <h2 className="font-semibold">Create Organization</h2>

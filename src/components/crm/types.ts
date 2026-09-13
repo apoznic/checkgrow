@@ -47,6 +47,7 @@ export interface CRMDeal {
   approval_status: string;
   project_id?: string | null;
   archived_from?: string | null;
+  source?: string | null;
   crm_contacts?: CRMContact;
   profiles?: {
     id: string;

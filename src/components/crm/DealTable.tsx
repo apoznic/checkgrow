@@ -21,7 +21,7 @@ interface DealTableProps {
   onStageChange: (dealId: string, stage: DealStage, currentStage: DealStage) => void;
 }
 
-type SortKey = 'title' | 'contact' | 'stage' | 'value' | 'probability' | 'owner' | 'expected_close_date' | 'updated_at';
+type SortKey = 'title' | 'contact' | 'source' | 'stage' | 'value' | 'probability' | 'owner' | 'expected_close_date' | 'updated_at';
 
 const stageOrder: DealStage[] = ['lead', 'negotiation', 'won', 'lost', 'archived'];
 
@@ -47,6 +47,7 @@ export function DealTable({ deals, stages, canManage, onOpen, onEdit, onDelete, 
       switch (sortKey) {
         case 'title': return d.title.toLowerCase();
         case 'contact': return (d.crm_contacts?.company || d.crm_contacts?.name || '').toLowerCase();
+        case 'source': return (d.source || '').toLowerCase();
         case 'stage': return stageOrder.indexOf(d.stage);
         case 'value': return d.value ?? -1;
         case 'probability': return d.probability ?? -1;
@@ -97,6 +98,7 @@ export function DealTable({ deals, stages, canManage, onOpen, onEdit, onDelete, 
             <TableRow className="hover:bg-transparent">
               <Th column="title">Lead</Th>
               <Th column="contact">Contact</Th>
+              <Th column="source">Source</Th>
               <Th column="stage">Stage</Th>
               <Th column="value" className="text-right">Value</Th>
               <Th column="probability">Probability</Th>
@@ -134,6 +136,13 @@ export function DealTable({ deals, stages, canManage, onOpen, onEdit, onDelete, 
                       </div>
                     ) : (
                       <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {deal.source ? (
+                      <span className="inline-flex items-center rounded-full bg-accent px-2 py-0.5 text-xs font-medium text-accent-foreground border border-[#CFC3D9]">{deal.source}</span>
+                    ) : (
+                      <span className="text-xs text-[#9B9B9B]">Manual</span>
                     )}
                   </TableCell>
                   <TableCell onClick={e => e.stopPropagation()}>
@@ -211,7 +220,7 @@ export function DealTable({ deals, stages, canManage, onOpen, onEdit, onDelete, 
           </TableBody>
           <TableFooter>
             <TableRow className="hover:bg-transparent">
-              <TableCell colSpan={3} className="text-xs text-muted-foreground">
+              <TableCell colSpan={4} className="text-xs text-muted-foreground">
                 {deals.length} {deals.length === 1 ? 'lead' : 'leads'}
               </TableCell>
               <TableCell className="text-right font-semibold whitespace-nowrap">€{totalValue.toLocaleString()}</TableCell>

@@ -2,53 +2,60 @@
 @tailwind components;
 @tailwind utilities;
 
-/* CheckGrow - Clean Warm Light Theme (Hims-inspired) */
+/*
+  CheckGrow design system
+  Flat, minimal, light. Warm off-white canvas, periwinkle accent, Geist type.
+  Tokens are HSL triplets consumed by tailwind.config.ts.
+*/
 
 @layer base {
   :root {
-    /* Warm Light Palette */
-    --background: 40 25% 96%;
-    --foreground: 30 15% 12%;
+    /* Canvas + surfaces */
+    --background: 60 11% 96%;          /* #F7F7F5 */
+    --foreground: 38 11% 15%;          /* #2A2722 */
 
-    --card: 0 0% 100%;
-    --card-foreground: 30 15% 12%;
+    --card: 0 0% 100%;                 /* #FFFFFF */
+    --card-foreground: 38 11% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 30 15% 12%;
+    --popover-foreground: 38 11% 15%;
 
-    /* Primary - Warm Dark Brown */
-    --primary: 25 30% 25%;
-    --primary-foreground: 40 25% 96%;
+    /* Periwinkle accent: active states, highlights, focus, key callouts */
+    --primary: 233 100% 80%;           /* #9BA6FF */
+    --primary-foreground: 0 0% 100%;
 
-    /* Secondary - Light warm gray */
-    --secondary: 35 15% 92%;
-    --secondary-foreground: 30 15% 30%;
+    /* Neutral 100: secondary surfaces, sidebar fills, secondary buttons */
+    --secondary: 60 10% 94%;           /* #F2F2EF */
+    --secondary-foreground: 38 11% 15%;
 
-    --muted: 35 12% 90%;
-    --muted-foreground: 25 8% 50%;
+    --muted: 60 10% 94%;               /* #F2F2EF */
+    --muted-foreground: 240 6% 26%;    /* #3F3F47 */
 
-    /* Accent - Warm amber for active states & CTAs */
-    --accent: 30 60% 50%;
-    --accent-foreground: 0 0% 100%;
+    /* Light blue/purple tint: chips, badges, hover tints */
+    --accent: 226 86% 94%;             /* #E4EAFD */
+    --accent-foreground: 234 62% 60%;  /* #5B67D8 */
 
-    --destructive: 0 60% 50%;
+    --destructive: 358 75% 59%;        /* #E5484D */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 35 15% 88%;
-    --input: 35 15% 92%;
-    --ring: 25 30% 25%;
+    --success: 150 47% 45%;            /* #3DAA74 */
+    --warning: 37 91% 55%;             /* #F5A623 */
 
-    --radius: 0.75rem;
+    --border: 60 7% 92%;               /* #ECECE9 */
+    --input: 0 0% 100%;
+    --ring: 233 100% 80%;
 
-    /* Sidebar - Soft cream */
-    --sidebar-background: 40 20% 97%;
-    --sidebar-foreground: 30 15% 25%;
-    --sidebar-primary: 25 30% 25%;
-    --sidebar-primary-foreground: 40 25% 96%;
-    --sidebar-accent: 35 20% 93%;
-    --sidebar-accent-foreground: 30 15% 20%;
-    --sidebar-border: 35 15% 88%;
-    --sidebar-ring: 25 30% 25%;
+    --radius: 0.5rem;                  /* 8px: buttons, inputs */
+
+    /* Sidebar */
+    --sidebar-background: 60 10% 94%;
+    --sidebar-foreground: 240 6% 26%;
+    --sidebar-primary: 233 100% 80%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 226 86% 94%;
+    --sidebar-accent-foreground: 38 11% 15%;
+    --sidebar-border: 60 7% 92%;
+    --sidebar-ring: 233 100% 80%;
   }
 }
 
@@ -57,198 +64,151 @@
     @apply border-border;
   }
 
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
   body {
-    @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    @apply bg-background text-foreground;
+    font-family: 'Geist', system-ui, -apple-system, sans-serif;
+    font-size: 1rem;
+    line-height: 1.6;
     min-height: 100vh;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-foreground;
+    letter-spacing: -0.01em;
+  }
+
+  code, kbd, pre, samp {
+    font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  ::placeholder {
+    color: #9B9B9B;
   }
 }
 
 @layer components {
-  /* Clean panel */
+  /* Card: white surface, 16px radius, gentle shadow */
   .glass-panel {
-    @apply relative overflow-hidden rounded-xl;
-    background: hsl(var(--card));
-    border: 1px solid hsl(var(--border));
+    @apply relative overflow-hidden rounded-2xl bg-card;
+    box-shadow: 0 4px 12px 0 rgba(42, 39, 34, 0.08);
   }
 
   /* Card with hover */
   .glass-card {
-    @apply glass-panel transition-all duration-200;
+    @apply glass-panel transition-shadow duration-150;
   }
 
   .glass-card:hover {
-    border-color: hsl(var(--primary) / 0.2);
-    box-shadow: 0 4px 12px hsl(25 30% 25% / 0.06);
+    box-shadow: 0 8px 24px 0 rgba(42, 39, 34, 0.10);
   }
 
-  /* Clean Input */
+  /* Flat bordered card for data-dense layouts */
+  .card-outlined {
+    @apply rounded-2xl border border-border bg-background;
+  }
+
+  /* Accent-tinted card */
+  .card-tinted {
+    @apply rounded-2xl bg-accent;
+  }
+
+  /* Input: white, 1px neutral border, 8px radius, periwinkle focus ring */
   .glass-input {
-    @apply w-full px-3 py-2 rounded-lg transition-all duration-200 text-sm;
-    background: hsl(var(--input));
+    @apply w-full rounded-lg text-sm transition-all duration-100;
+    padding: 10px 12px;
+    background: #FFFFFF;
     border: 1px solid hsl(var(--border));
     color: hsl(var(--foreground));
   }
 
   .glass-input:focus {
-    @apply outline-none ring-2;
-    --tw-ring-color: hsl(var(--primary) / 0.2);
-    border-color: hsl(var(--primary) / 0.4);
+    outline: none;
+    border-color: hsl(var(--primary));
+    box-shadow: 0 0 0 2px hsl(var(--primary));
   }
 
   .glass-input::placeholder {
-    color: hsl(var(--muted-foreground));
+    color: #9B9B9B;
   }
 
-  /* Clean Button */
+  /* Buttons: 8px radius, weight 600, 150ms transitions */
   .glass-button {
-    @apply relative px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200;
-    background: hsl(var(--card));
+    @apply relative rounded-lg font-semibold text-sm transition-colors duration-150;
+    padding: 10px 20px;
+    background: hsl(var(--secondary));
     border: 1px solid hsl(var(--border));
     color: hsl(var(--foreground));
   }
 
   .glass-button:hover {
-    background: hsl(var(--secondary));
-    border-color: hsl(var(--primary) / 0.2);
+    background: #ECECE9;
   }
 
-  /* Primary Button */
+  /* Primary: dark fill on light canvas */
   .glass-button-primary {
     @apply glass-button;
-    background: hsl(var(--primary));
-    border-color: hsl(var(--primary));
-    color: hsl(var(--primary-foreground));
+    background: #2A2722;
+    border-color: #2A2722;
+    color: #F7F7F5;
   }
 
   .glass-button-primary:hover {
-    background: hsl(25 30% 20%);
-    border-color: hsl(25 30% 20%);
+    background: #3F3F47;
+    border-color: #3F3F47;
   }
 
-  /* Skill Bubble */
+  /* Accent: periwinkle fill, use sparingly */
+  .glass-button-accent {
+    @apply glass-button;
+    background: hsl(var(--primary));
+    border-color: hsl(var(--primary));
+    color: #FFFFFF;
+  }
+
+  .glass-button-accent:hover {
+    background: #8A96F0;
+    border-color: #8A96F0;
+  }
+
+  /* Eyebrow label above headings */
+  .eyebrow {
+    @apply text-xs font-semibold uppercase text-primary;
+    letter-spacing: 0.1em;
+  }
+
+  /* Skill bubble */
   .skill-bubble {
-    @apply inline-flex items-center justify-center px-4 py-2 rounded-full font-medium text-sm cursor-pointer transition-all duration-200;
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-full font-medium text-sm cursor-pointer transition-colors duration-150;
     background: hsl(var(--secondary));
     border: 1px solid hsl(var(--border));
     color: hsl(var(--secondary-foreground));
   }
 
   .skill-bubble:hover {
-    border-color: hsl(var(--primary) / 0.3);
-    background: hsl(var(--muted));
+    background: hsl(var(--accent));
+    border-color: #CFC3D9;
   }
 
   .skill-bubble.selected {
-    background: hsl(var(--primary));
-    color: hsl(var(--primary-foreground));
-    border-color: hsl(var(--primary));
+    background: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
+    border-color: #CFC3D9;
   }
 
-  /* Forge Mode Card */
-  .forge-mode {
-    background: linear-gradient(145deg, #2a1a52 0%, #170d2e 100%) !important;
-    border-color: rgba(155, 126, 216, 0.25) !important;
-  }
-
-  .forge-mode .text-foreground,
-  .forge-mode .text-primary,
-  .forge-mode .text-muted-foreground,
-  .forge-mode .text-accent-foreground,
-  .forge-mode .text-secondary-foreground {
-    color: rgba(255, 255, 255, 0.92) !important;
-  }
-
-  .forge-mode h3 {
-    color: #ffffff !important;
-  }
-
-  .forge-mode .text-green-400 {
-    color: #a7f3d0 !important;
-  }
-
-  .forge-mode svg:not([class*="text-destructive"]) {
-    color: rgba(255, 255, 255, 0.85) !important;
-  }
-
-  .forge-mode [class*="border-primary"],
-  .forge-mode [class*="border-accent"] {
-    border-color: rgba(155, 126, 216, 0.35) !important;
-  }
-
-  .forge-mode [class*="bg-primary/"],
-  .forge-mode [class*="bg-accent/"] {
-    background: rgba(155, 126, 216, 0.18) !important;
-  }
-
-  .forge-mode [class*="bg-background/"] {
-    background: rgba(255, 255, 255, 0.08) !important;
-  }
-
-  .forge-mode [class*="bg-muted"],
-  .forge-mode [class*="bg-secondary"] {
-    background: rgba(255, 255, 255, 0.1) !important;
-  }
-
-  .forge-mode [class*="border-border"] {
-    border-color: rgba(155, 126, 216, 0.2) !important;
-  }
-
-  .forge-mode [class*="border-green-500"] {
-    border-color: rgba(134, 239, 172, 0.35) !important;
-  }
-
-  .forge-mode [class*="bg-green-500"] {
-    background: rgba(134, 239, 172, 0.12) !important;
-  }
-
-  .forge-mode [class*="hover:bg-secondary/50"]:hover {
-    background: rgba(255, 255, 255, 0.15) !important;
-  }
-
-  .forge-mode [class*="hover:text-foreground"]:hover {
-    color: #ffffff !important;
-  }
-
-  /* Bento Grid */
-  .bento-grid {
-    @apply grid gap-4;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  }
-
-  .bento-item {
-    @apply glass-card p-6;
-  }
-
-  .bento-item-large {
-    @apply bento-item;
-    grid-column: span 2;
-  }
-
-  /* Chat Bubble */
-  .chat-bubble {
-    @apply glass-panel p-4 max-w-[80%];
-  }
-
-  .chat-bubble-user {
-    @apply chat-bubble ml-auto;
-    background: hsl(var(--primary) / 0.08);
-    border-color: hsl(var(--primary) / 0.12);
-  }
-
-  .chat-bubble-ai {
-    @apply chat-bubble mr-auto;
-  }
-
-  /* Skill Badge */
+  /* Skill badge */
   .skill-badge {
-    @apply inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium;
-    background: hsl(var(--accent) / 0.4);
-    border: 1px solid hsl(var(--accent));
-    color: hsl(var(--primary));
+    @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium;
+    background: hsl(var(--accent));
+    border: 1px solid #CFC3D9;
+    color: hsl(var(--accent-foreground));
   }
 
-  /* Status Indicator */
+  /* Status indicator */
   .status-available {
     @apply inline-flex items-center gap-2;
   }
@@ -256,24 +216,19 @@
   .status-available::before {
     content: '';
     @apply w-2 h-2 rounded-full;
-    background: hsl(142 55% 45%);
+    background: hsl(var(--success));
   }
 
   .status-unavailable::before {
     content: '';
     @apply w-2 h-2 rounded-full;
-    background: hsl(0 55% 50%);
-  }
-
-  /* Swarm Card */
-  .swarm-card {
-    @apply glass-card p-4;
+    background: hsl(var(--destructive));
   }
 }
 
 @layer utilities {
   .animate-spring-in {
-    animation: spring-in 0.4s ease-out forwards;
+    animation: spring-in 0.3s ease-out forwards;
   }
 
   .animate-spring-up {
@@ -285,12 +240,12 @@
   }
 
   @keyframes spring-in {
-    0% { opacity: 0; transform: scale(0.96) translateY(10px); }
-    100% { opacity: 1; transform: scale(1) translateY(0); }
+    0% { opacity: 0; transform: translateY(8px); }
+    100% { opacity: 1; transform: translateY(0); }
   }
 
   @keyframes spring-up {
-    0% { opacity: 0; transform: translateY(20px); }
+    0% { opacity: 0; transform: translateY(16px); }
     100% { opacity: 1; transform: translateY(0); }
   }
 
@@ -299,18 +254,12 @@
     100% { opacity: 1; transform: translateY(0); }
   }
 
-  /* Gradient Text */
-  .gradient-text {
-    @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(25 35% 40%) 100%);
-  }
-
+  /* Brand is flat: former gradient text renders as solid ink */
+  .gradient-text,
   .gradient-text-warm {
-    @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, hsl(25 30% 30%) 0%, hsl(35 45% 55%) 100%);
+    color: hsl(var(--foreground));
   }
 
-  /* Scrollbar */
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -326,8 +275,8 @@
   }
 
   *::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
+    width: 6px;
+    height: 6px;
   }
 
   *::-webkit-scrollbar-track {
@@ -335,15 +284,7 @@
   }
 
   *::-webkit-scrollbar-thumb {
-    background-color: hsl(var(--border));
+    background: hsl(var(--border));
     border-radius: 9999px;
-  }
-
-  *::-webkit-scrollbar-thumb:hover {
-    background-color: hsl(var(--muted-foreground) / 0.3);
-  }
-
-  *::-webkit-scrollbar-corner {
-    background: transparent;
   }
 }
