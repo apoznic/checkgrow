@@ -120,6 +120,24 @@ Recognised fields (case-insensitive): `name` or `first_name`/`last_name`, `email
 organization; the webhook's default owner is notified in-app. The token can also be sent as an
 `x-webhook-token` header or as the last path segment.
 
+## Forms (embeddable lead forms)
+
+CRM → Forms. Build a form (short/long text, email, phone, dropdown, checkbox, hidden value; each
+field maps to a lead property or is kept as an attribute), style it (title, button, accent colour,
+success message or redirect, consent note, transparent or card background) and embed it:
+
+```html
+<div data-checkgrow-form="frm_…"></div>
+<script async src="https://<project>.supabase.co/functions/v1/crm-form/frm_…/embed.js"></script>
+```
+
+or as an iframe / hosted page at `https://<app>/f/frm_…` (the app route `/f/:publicId`; Supabase
+function URLs cannot serve HTML). The `crm-form` function serves the definition and the script, and accepts submissions at `…/submit`: it validates required
+fields, filters spam (honeypot + minimum fill time), records page URL, referrer and UTM values, and
+hands the lead to the form's own inbound webhook, so it gets the same source, stage, owner and
+automations as any other lead. The page fires a `checkgrow:lead` browser event after a successful
+submission for analytics hooks.
+
 ## Outbound webhooks
 
 CRM → Outbound webhooks. Add a destination URL, pick the events (lead created / updated /

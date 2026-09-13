@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Kanban, Webhook, Send, Table2 } from 'lucide-react';
+import { Kanban, Webhook, Send, Table2, FormInput } from 'lucide-react';
 import { DealList } from './DealList';
 import { LeadsView } from './LeadsView';
 import { LeadWebhooksPanel } from './LeadWebhooksPanel';
 import { OutboundWebhooksPanel } from './OutboundWebhooksPanel';
+import { FormsPanel } from './FormsPanel';
 
 interface CrmTabProps {
   clusterId: string;
@@ -13,7 +14,7 @@ interface CrmTabProps {
   initialDealId?: string | null;
 }
 
-type CrmView = 'leads' | 'pipeline' | 'inbound' | 'outbound';
+type CrmView = 'leads' | 'pipeline' | 'forms' | 'inbound' | 'outbound';
 
 const VIEW_KEY = 'crm_view';
 
@@ -30,6 +31,7 @@ export function CrmTab({ clusterId, profileId, canManage, userRole, initialDealI
   const views: { id: CrmView; label: string; icon: React.ElementType }[] = [
     { id: 'leads', label: 'Leads', icon: Table2 },
     { id: 'pipeline', label: 'Pipeline', icon: Kanban },
+    { id: 'forms', label: 'Forms', icon: FormInput },
     { id: 'inbound', label: 'Inbound webhooks', icon: Webhook },
     { id: 'outbound', label: 'Outbound webhooks', icon: Send },
   ];
@@ -66,6 +68,13 @@ export function CrmTab({ clusterId, profileId, canManage, userRole, initialDealI
           canManage={canManage}
           userRole={userRole}
           initialDealId={openDealId}
+        />
+      ) : view === 'forms' ? (
+        <FormsPanel
+          clusterId={clusterId}
+          profileId={profileId}
+          canManage={canManage}
+          onOpenDeal={dealId => { setOpenDealId(dealId); switchView('leads'); }}
         />
       ) : view === 'inbound' ? (
         <LeadWebhooksPanel

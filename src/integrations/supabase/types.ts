@@ -795,6 +795,62 @@ export type Database = {
           },
         ]
       }
+      crm_forms: {
+        Row: {
+          cluster_id: string
+          created_at: string
+          created_by: string | null
+          enabled: boolean
+          fields: Json
+          id: string
+          last_submission_at: string | null
+          name: string
+          public_id: string
+          settings: Json
+          submissions_count: number
+          updated_at: string
+          webhook_id: string
+        }
+        Insert: {
+          cluster_id: string
+          created_at?: string
+          created_by?: string | null
+          enabled?: boolean
+          fields?: Json
+          id?: string
+          last_submission_at?: string | null
+          name: string
+          public_id?: string
+          settings?: Json
+          submissions_count?: number
+          updated_at?: string
+          webhook_id: string
+        }
+        Update: {
+          cluster_id?: string
+          created_at?: string
+          created_by?: string | null
+          enabled?: boolean
+          fields?: Json
+          id?: string
+          last_submission_at?: string | null
+          name?: string
+          public_id?: string
+          settings?: Json
+          submissions_count?: number
+          updated_at?: string
+          webhook_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_forms_webhook_id_fkey"
+            columns: ["webhook_id"]
+            isOneToOne: false
+            referencedRelation: "crm_webhooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_outbound_webhooks: {
         Row: {
           cluster_id: string

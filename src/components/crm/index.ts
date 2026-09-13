@@ -3,6 +3,7 @@ export { DealList } from './DealList';
 export { DealTable } from './DealTable';
 export { CrmTab } from './CrmTab';
 export { LeadsView } from './LeadsView';
+export { FormsPanel } from './FormsPanel';
 export { LeadWebhooksPanel } from './LeadWebhooksPanel';
 export { OutboundWebhooksPanel } from './OutboundWebhooksPanel';
 export { AutomationsPanel } from './AutomationsPanel';
