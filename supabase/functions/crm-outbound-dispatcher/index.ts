@@ -50,6 +50,13 @@ const hmac = async (secret: string, data: string) => {
   };
 };
 
+// Pipeline stages mapped onto the status vocabulary most lead tools use
+// (Checkgrow validates "status" and rejects anything outside this list).
+const STATUS_FOR_STAGE: Record<string, string> = {
+  lead: "new", qualified: "qualified", proposal: "contacted", negotiation: "contacted", won: "won", lost: "lost", archived: "lost",
+};
+const statusFor = (stage: unknown): string | null => (typeof stage === "string" ? STATUS_FOR_STAGE[stage] ?? null : null);
+
 const SAMPLE_LEAD = {
   id: "00000000-0000-0000-0000-000000000000",
   title: "Test lead from CheckGrow CRM",
@@ -189,9 +196,13 @@ Deno.serve(async (req) => {
       payload = {
         event: d.event, delivery_id: d.id, sent_at: sentAt,
         external_id: lead.id, lead_id: lead.id,
-        name: c.name ?? null, email: c.email ?? null, phone: c.phone ?? null, company: c.company ?? null, position: c.position ?? null,
+        name: c.name ?? lead.title ?? null, email: c.email ?? null, phone: c.phone ?? null, company: c.company ?? null, position: c.position ?? null,
         subject: lead.title, message: lead.description ?? null, value: lead.value, currency: lead.currency,
-        stage: lead.stage, previous_stage: lead.previous_stage ?? null, source: lead.source ?? null,
+        // "status" uses the common new/contacted/qualified/won/lost vocabulary; the raw pipeline stage
+        // travels as pipeline_stage so it never trips a receiver's status validation.
+        status: statusFor(lead.stage), pipeline_stage: lead.stage,
+        previous_status: statusFor(lead.previous_stage), previous_pipeline_stage: lead.previous_stage ?? null,
+        source: lead.source ?? null,
         assigned_to: (lead.assigned_to as Json | null)?.name ?? null,
       };
     } else {
@@ -211,7 +222,10 @@ Deno.serve(async (req) => {
       "x-signature": `sha256=${plain.hex}`,
       "x-webhook-event": d.event,
     };
-    for (const [k, v] of Object.entries(hook.headers || {})) if (k && typeof v === "string") headers[k] = v;
+    // Custom headers: only well-formed names (RFC 7230 tokens); anything else is ignored rather than failing the delivery
+    for (const [k, v] of Object.entries(hook.headers || {})) {
+      if (/^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/.test(k) && typeof v === "string" && !/[\r\n]/.test(v)) headers[k] = v;
+    }
 
     let target: URL;
     try { target = new URL(hook.url); } catch { await fail("Invalid URL", null, null, payload); continue; }

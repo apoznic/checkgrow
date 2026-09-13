@@ -129,7 +129,9 @@ other. Payload shapes:
 ```
 
 Flat (for form-style receivers): `{ event, delivery_id, external_id, name, email, phone, company,
-position, subject, message, value, currency, stage, previous_stage, source, assigned_to }`.
+position, subject, message, value, currency, status, pipeline_stage, previous_status,
+previous_pipeline_stage, source, assigned_to }`. `status` uses the common new / contacted / qualified /
+won / lost vocabulary (Checkgrow validates it); `pipeline_stage` carries the raw CRM stage.
 
 ### Importing existing leads (CSV)
 

@@ -80,16 +80,22 @@ const STATUS_STYLE: Record<DeliveryRow['status'], string> = {
   failed: 'bg-red-100 text-red-600',
 };
 
-const parseHeaders = (text: string): Record<string, string> | null => {
-  const out: Record<string, string> = {};
+const HEADER_NAME = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
+
+/** "Name: value" per line. Returns an error message for anything that is not a real HTTP header. */
+const parseHeaders = (text: string): { headers: Record<string, string> } | { error: string } => {
+  const headers: Record<string, string> = {};
   for (const line of text.split('\n')) {
     const trimmed = line.trim();
     if (!trimmed) continue;
     const idx = trimmed.indexOf(':');
-    if (idx <= 0) return null;
-    out[trimmed.slice(0, idx).trim()] = trimmed.slice(idx + 1).trim();
+    const name = idx > 0 ? trimmed.slice(0, idx).trim() : '';
+    if (!name || !HEADER_NAME.test(name)) {
+      return { error: `"${trimmed.slice(0, 40)}${trimmed.length > 40 ? '…' : ''}" is not a header. Use one "Name: value" per line, e.g. "X-Api-Key: abc123". Leave the field empty if the receiver needs no extra headers.` };
+    }
+    headers[name] = trimmed.slice(idx + 1).trim();
   }
-  return out;
+  return { headers };
 };
 
 const headersToText = (h: Record<string, string> | null | undefined) =>
@@ -168,9 +174,9 @@ export function OutboundWebhooksPanel({ clusterId, profileId, canManage, onOpenD
     if (!name) { toast({ title: 'Give the webhook a name', variant: 'destructive' }); return null; }
     if (!/^https?:\/\/\S+$/i.test(url)) { toast({ title: 'Enter a full URL', description: 'It must start with https:// (or http://).', variant: 'destructive' }); return null; }
     if (form.events.length === 0) { toast({ title: 'Pick at least one event', variant: 'destructive' }); return null; }
-    const headers = parseHeaders(form.headersText);
-    if (!headers) { toast({ title: 'Headers must be "Name: value", one per line', variant: 'destructive' }); return null; }
-    return { name, url, headers };
+    const parsed = parseHeaders(form.headersText);
+    if ('error' in parsed) { toast({ title: 'Check the extra headers', description: parsed.error, variant: 'destructive' }); return null; }
+    return { name, url, headers: parsed.headers };
   };
 
   const handleCreate = async () => {
@@ -317,9 +323,10 @@ export function OutboundWebhooksPanel({ clusterId, profileId, canManage, onOpenD
           <p className="text-[11px] text-muted-foreground">Use "Flat" for form-style receivers that expect name, email and phone at the top level (Checkgrow's inbound webhook, Zapier, n8n).</p>
         </div>
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-muted-foreground">Extra headers (optional)</label>
+          <label className="text-xs font-medium text-muted-foreground">Extra HTTP headers (optional, usually empty)</label>
           <textarea value={form.headersText} onChange={e => setForm(p => ({ ...p, headersText: e.target.value }))} rows={3}
-            placeholder={'Authorization: Bearer …\nX-Api-Key: …'} className="glass-input font-mono text-xs w-full resize-y" />
+            placeholder={'X-Api-Key: abc123'} className="glass-input font-mono text-xs w-full resize-y" />
+          <p className="text-[11px] text-muted-foreground">Only if the receiver asks for an API key or token. One "Name: value" per line. Do not paste URLs or curl commands here; Checkgrow needs nothing.</p>
         </div>
       </div>
       <label className="flex items-start gap-2 text-xs">
