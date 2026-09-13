@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   Plus, Loader2, Webhook, Copy, Check, RefreshCw, Trash2, Power, PowerOff,
-  Inbox, AlertCircle, ExternalLink, ChevronDown, ChevronRight, Code2,
+  Inbox, AlertCircle, ExternalLink, ChevronDown, ChevronRight, Code2, ShieldCheck, KeyRound,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,6 +26,7 @@ interface WebhookRow {
   enabled: boolean;
   default_stage: DealStage;
   default_assigned_to: string | null;
+  signing_secret: string | null;
   received_count: number;
   last_received_at: string | null;
   created_at: string;
@@ -33,7 +34,7 @@ interface WebhookRow {
 
 interface EventRow {
   id: string;
-  status: 'created' | 'duplicate' | 'error';
+  status: 'created' | 'duplicate' | 'error' | 'rejected';
   error: string | null;
   payload: Record<string, unknown>;
   deal_id: string | null;
@@ -61,6 +62,7 @@ const STATUS_STYLE: Record<EventRow['status'], string> = {
   created: 'bg-green-100 text-green-700',
   duplicate: 'bg-amber-100 text-amber-700',
   error: 'bg-red-100 text-red-600',
+  rejected: 'bg-red-100 text-red-600',
 };
 
 /**
@@ -80,6 +82,9 @@ export function LeadWebhooksPanel({ clusterId, profileId, canManage, onOpenDeal 
   const [events, setEvents] = useState<Record<string, EventRow[]>>({});
   const [eventsLoading, setEventsLoading] = useState<string | null>(null);
   const [showHelp, setShowHelp] = useState(false);
+  const [secretEditId, setSecretEditId] = useState<string | null>(null);
+  const [secretDraft, setSecretDraft] = useState('');
+  const [secretSaving, setSecretSaving] = useState(false);
 
   useEffect(() => {
     loadAll();
@@ -105,7 +110,7 @@ export function LeadWebhooksPanel({ clusterId, profileId, canManage, onOpenDeal 
   const loadWebhooks = async () => {
     const { data, error } = await supabase
       .from('crm_webhooks')
-      .select('id, name, source_label, token, enabled, default_stage, default_assigned_to, received_count, last_received_at, created_at')
+      .select('id, name, source_label, token, enabled, default_stage, default_assigned_to, signing_secret, received_count, last_received_at, created_at')
       .eq('cluster_id', clusterId)
       .order('created_at', { ascending: true });
     if (error) {
@@ -202,6 +207,32 @@ export function LeadWebhooksPanel({ clusterId, profileId, canManage, onOpenDeal 
   const handleUpdateField = async (hook: WebhookRow, patch: Partial<Pick<WebhookRow, 'default_stage' | 'default_assigned_to'>>) => {
     setWebhooks(prev => prev.map(h => (h.id === hook.id ? { ...h, ...patch } : h)));
     await supabase.from('crm_webhooks').update(patch).eq('id', hook.id);
+  };
+
+  const handleSaveSecret = async (hook: WebhookRow) => {
+    const secret = secretDraft.trim();
+    if (!secret) return;
+    setSecretSaving(true);
+    const { error } = await supabase.from('crm_webhooks').update({ signing_secret: secret }).eq('id', hook.id);
+    setSecretSaving(false);
+    if (error) {
+      toast({ title: 'Could not save the signing secret', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: 'Signature verification on', description: `Deliveries to "${hook.name}" must now be signed with this secret.` });
+    setSecretEditId(null);
+    setSecretDraft('');
+    loadWebhooks();
+  };
+
+  const handleRemoveSecret = async (hook: WebhookRow) => {
+    if (!confirm(`Stop verifying signatures for "${hook.name}"? Any request with the URL will be accepted again.`)) return;
+    const { error } = await supabase.from('crm_webhooks').update({ signing_secret: null }).eq('id', hook.id);
+    if (error) {
+      toast({ title: 'Could not remove the signing secret', description: error.message, variant: 'destructive' });
+      return;
+    }
+    loadWebhooks();
   };
 
   const copy = async (hook: WebhookRow) => {
@@ -370,6 +401,51 @@ export function LeadWebhooksPanel({ clusterId, profileId, canManage, onOpenDeal 
                       <span className="font-medium">{memberName(hook.default_assigned_to)}</span>
                     )}
                   </div>
+
+                  {/* Signing secret */}
+                  <div className="card-tinted p-3 space-y-2">
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <div className="flex items-center gap-2 text-xs">
+                        {hook.signing_secret ? <ShieldCheck className="w-4 h-4 text-green-600" /> : <KeyRound className="w-4 h-4 text-muted-foreground" />}
+                        <span className="font-medium">
+                          {hook.signing_secret ? 'Signature verification on' : 'Signature verification off'}
+                        </span>
+                        <span className="text-muted-foreground">
+                          {hook.signing_secret
+                            ? `· secret ${hook.signing_secret.slice(0, 10)}…${hook.signing_secret.slice(-4)}`
+                            : '· paste the signing secret the sending system gave you'}
+                        </span>
+                      </div>
+                      {canManage && secretEditId !== hook.id && (
+                        <div className="flex items-center gap-1">
+                          <GlassButtonNew variant="ghost" size="sm" onClick={() => { setSecretEditId(hook.id); setSecretDraft(''); }}>
+                            {hook.signing_secret ? 'Change secret' : 'Add secret'}
+                          </GlassButtonNew>
+                          {hook.signing_secret && (
+                            <GlassButtonNew variant="ghost" size="sm" onClick={() => handleRemoveSecret(hook)} className="text-muted-foreground hover:text-destructive">
+                              Remove
+                            </GlassButtonNew>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    {canManage && secretEditId === hook.id && (
+                      <div className="flex gap-2">
+                        <GlassInput
+                          value={secretDraft}
+                          onChange={e => setSecretDraft(e.target.value)}
+                          placeholder="e.g. lwhsec_0e327f4c…"
+                          className="font-mono text-xs"
+                          autoFocus
+                          onKeyDown={e => { if (e.key === 'Enter') handleSaveSecret(hook); if (e.key === 'Escape') setSecretEditId(null); }}
+                        />
+                        <GlassButtonNew variant="primary" size="default" onClick={() => handleSaveSecret(hook)} disabled={!secretDraft.trim()} isLoading={secretSaving}>
+                          Save
+                        </GlassButtonNew>
+                        <GlassButtonNew variant="ghost" size="default" onClick={() => setSecretEditId(null)}>Cancel</GlassButtonNew>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <button
@@ -463,6 +539,7 @@ export function LeadWebhooksPanel({ clusterId, profileId, canManage, onOpenDeal 
                   <li>Wrapped payloads (<code>data</code>, <code>fields</code>, <code>answers</code>) are unwrapped automatically.</li>
                   <li>The default owner gets an in-app notification for each new lead.</li>
                   <li>Pass the token as <code>?token=</code>, an <code>x-webhook-token</code> header, or the last path segment.</li>
+                  <li>With a signing secret set, deliveries must carry an HMAC-SHA256 of the raw body in <code>x-signature</code> (hex or base64, <code>sha256=</code>, <code>t=…,v1=…</code> and Standard Webhooks formats all work), or the secret itself in <code>x-webhook-secret</code>.</li>
                 </ul>
               </div>
             </div>

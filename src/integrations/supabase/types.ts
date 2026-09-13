@@ -793,6 +793,7 @@ export type Database = {
           name: string
           received_count: number
           source_label: string | null
+          signing_secret: string | null
           token: string
           updated_at: string
         }
@@ -808,6 +809,7 @@ export type Database = {
           name: string
           received_count?: number
           source_label?: string | null
+          signing_secret?: string | null
           token?: string
           updated_at?: string
         }
@@ -823,6 +825,7 @@ export type Database = {
           name?: string
           received_count?: number
           source_label?: string | null
+          signing_secret?: string | null
           token?: string
           updated_at?: string
         }

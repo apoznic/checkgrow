@@ -19,13 +19,23 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
  *   external_id | id | lead_id              -> de-duplication key
  * Everything else is appended to the description as "Details".
  *
+ * Signature verification: when the webhook has a signing secret, every
+ * delivery must prove it with HMAC-SHA256 over the raw body. Accepted forms:
+ *   - header x-signature / x-webhook-signature / x-hub-signature-256 /
+ *     x-signature-256 / x-checkgrow-signature / signature with the hex or
+ *     base64 digest, optionally prefixed "sha256="
+ *   - Stripe style "t=<ts>,v1=<hex>" (signs "<ts>.<body>")
+ *   - Standard Webhooks "v1,<base64>" with webhook-id + webhook-timestamp
+ *     (signs "<id>.<ts>.<body>")
+ *   - the secret itself in x-webhook-secret or "Authorization: Bearer"
+ *
  * After the lead is created, matching automations are enrolled and the
  * runner is woken so zero-delay steps execute immediately.
  */
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-webhook-token",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-webhook-token, x-webhook-secret, x-signature, x-webhook-signature, x-hub-signature-256, x-signature-256, x-checkgrow-signature, webhook-signature, webhook-id, webhook-timestamp, x-timestamp, x-webhook-timestamp",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -99,6 +109,70 @@ const conditionsMatch = (conditions: Condition[], fields: Record<string, string>
   return true;
 };
 
+const SIG_HEADERS = ["x-checkgrow-signature", "x-webhook-signature", "x-signature-256", "x-hub-signature-256", "x-signature", "x-hmac-signature", "webhook-signature", "signature"];
+const TS_HEADERS = ["x-checkgrow-timestamp", "x-webhook-timestamp", "webhook-timestamp", "x-signature-timestamp", "x-timestamp"];
+const ID_HEADERS = ["webhook-id", "x-webhook-id"];
+
+const hmac = async (secret: string, data: string): Promise<{ hex: string; b64: string }> => {
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const sig = new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(data)));
+  return {
+    hex: Array.from(sig).map((b) => b.toString(16).padStart(2, "0")).join(""),
+    b64: btoa(String.fromCharCode(...sig)),
+  };
+};
+
+const safeEqual = (a: string, b: string): boolean => {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+};
+
+interface SignatureCheck { ok: boolean; header?: string; reason?: string }
+
+const verifySignature = async (req: Request, raw: string, secret: string): Promise<SignatureCheck> => {
+  // Plain shared secret
+  const plain = req.headers.get("x-webhook-secret") || (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
+  if (plain && safeEqual(plain, secret)) return { ok: true, header: "shared secret" };
+
+  let header: string | undefined;
+  let value: string | undefined;
+  for (const h of SIG_HEADERS) {
+    const v = req.headers.get(h);
+    if (v) { header = h; value = v; break; }
+  }
+  if (!value) {
+    const seen = Array.from(req.headers.keys()).filter((k) => /sign|secret|hmac|auth/i.test(k));
+    return { ok: false, reason: seen.length ? `no signature header found (saw: ${seen.join(", ")})` : "no signature header found" };
+  }
+
+  let ts = TS_HEADERS.map((h) => req.headers.get(h)).find(Boolean) || null;
+  const id = ID_HEADERS.map((h) => req.headers.get(h)).find(Boolean) || null;
+  const provided: string[] = [];
+  for (const part of value.split(/[\s,]+/)) {
+    if (!part) continue;
+    const eq = part.indexOf("=");
+    const key = eq > 0 ? part.slice(0, eq).toLowerCase() : "";
+    if (eq > 0 && /^(t|ts|timestamp)$/.test(key)) { ts = ts || part.slice(eq + 1); continue; }
+    if (eq > 0 && /^(v\d+|sha256|sha-256|hmac|hmac-sha256|s)$/.test(key)) { provided.push(part.slice(eq + 1)); continue; }
+    if (/^v\d+$/.test(part)) continue; // "v1,<sig>" split into two tokens
+    provided.push(part);
+  }
+  if (provided.length === 0) return { ok: false, header, reason: `could not read a digest from ${header}` };
+
+  const contents = [raw];
+  if (ts) contents.push(`${ts}.${raw}`);
+  if (ts && id) contents.push(`${id}.${ts}.${raw}`);
+  for (const content of contents) {
+    const { hex, b64 } = await hmac(secret, content);
+    for (const p of provided) {
+      if (safeEqual(p.toLowerCase(), hex) || safeEqual(p, b64)) return { ok: true, header };
+    }
+  }
+  return { ok: false, header, reason: `digest in ${header} does not match` };
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Use POST" }, 405);
@@ -114,29 +188,47 @@ Deno.serve(async (req) => {
 
   const { data: hook } = await supabase
     .from("crm_webhooks")
-    .select("id, cluster_id, name, source_label, enabled, default_stage, default_assigned_to, created_by")
+    .select("id, cluster_id, name, source_label, enabled, default_stage, default_assigned_to, created_by, signing_secret")
     .eq("token", token)
     .maybeSingle();
   if (!hook) return json({ error: "Unknown token" }, 401);
   if (!hook.enabled) return json({ error: "This webhook is disabled" }, 403);
 
-  // ---- Parse body ----
+  // ---- Read the raw body (needed for signature checks), then parse ----
+  const raw = await req.text();
   let payload: Payload = {};
   const ctype = req.headers.get("content-type") || "";
   try {
     if (ctype.includes("application/json")) {
-      payload = (await req.json()) as Payload;
-    } else if (ctype.includes("form")) {
-      const form = await req.formData();
+      payload = JSON.parse(raw) as Payload;
+    } else if (ctype.includes("multipart/form-data")) {
+      const form = await new Response(raw, { headers: { "content-type": ctype } }).formData();
       for (const [k, v] of form.entries()) payload[k] = typeof v === "string" ? v : (v as File).name;
+    } else if (ctype.includes("form")) {
+      for (const [k, v] of new URLSearchParams(raw).entries()) payload[k] = v;
     } else {
-      const text = await req.text();
-      try { payload = JSON.parse(text); } catch { payload = text ? { message: text } : {}; }
+      try { payload = JSON.parse(raw); } catch { payload = raw ? { message: raw } : {}; }
     }
   } catch {
     return json({ error: "Could not parse body" }, 400);
   }
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) return json({ error: "Body must be an object" }, 400);
+
+  // ---- Signature check (only when the webhook has a signing secret) ----
+  if (hook.signing_secret) {
+    const check = await verifySignature(req, raw, hook.signing_secret);
+    if (!check.ok) {
+      await supabase.from("crm_webhook_events").insert({
+        webhook_id: hook.id, cluster_id: hook.cluster_id,
+        status: "rejected", error: `Signature check failed: ${check.reason}`, payload,
+      });
+      return json({
+        error: "Invalid signature",
+        detail: check.reason,
+        hint: "Sign the raw body with HMAC-SHA256 using the webhook's signing secret and send it in x-signature (or send the secret in x-webhook-secret).",
+      }, 401);
+    }
+  }
 
   // Unwrap common envelopes
   for (const key of ["data", "fields", "answers", "form_response", "body", "lead", "payload"]) {

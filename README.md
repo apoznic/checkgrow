@@ -108,6 +108,19 @@ Recognised fields (case-insensitive): `name` or `first_name`/`last_name`, `email
 organization; the webhook's default owner is notified in-app. The token can also be sent as an
 `x-webhook-token` header or as the last path segment.
 
+### Verifying signed deliveries
+
+If the sending system gives you a signing secret (for example `lwhsec_…` from an outbound
+webhook destination), paste it on the webhook card under **Signature verification**. From then
+on every delivery must be signed with HMAC-SHA256 over the raw request body using that secret.
+The digest can arrive as hex or base64 in `x-signature`, `x-webhook-signature`,
+`x-hub-signature-256`, `x-signature-256`, `x-checkgrow-signature` or `signature`, optionally
+prefixed with `sha256=`; Stripe-style `t=<ts>,v1=<hex>` (signing `<ts>.<body>`) and Standard
+Webhooks `v1,<base64>` with `webhook-id` and `webhook-timestamp` (signing `<id>.<ts>.<body>`)
+are accepted too, as is the secret itself in `x-webhook-secret` or an `Authorization: Bearer`
+header. Unsigned or mis-signed requests get a 401 and show up as **rejected** in the webhook's
+recent deliveries, with the reason.
+
 ## Automations (contact loops)
 
 Automations → New automation. Pick the trigger: any inbound source or one specific webhook
