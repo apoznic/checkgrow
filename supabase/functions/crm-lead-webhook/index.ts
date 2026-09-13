@@ -17,6 +17,10 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
  *   value | amount | budget                  -> lead value (number)
  *   source | utm_source                      -> lead source (overrides webhook label)
  *   external_id | id | lead_id              -> de-duplication key
+ *   campaign | form_name                     -> used in the lead title when there is no subject
+ *
+ * Header `x-skip-automations: 1` creates the lead without enrolling it in
+ * automations (used by CSV imports of historical leads).
  * Everything else is appended to the description as "Details".
  *
  * Signature verification: when the webhook has a signing secret, every
@@ -35,7 +39,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-webhook-token, x-webhook-secret, x-signature, x-webhook-signature, x-hub-signature-256, x-signature-256, x-checkgrow-signature, webhook-signature, webhook-id, webhook-timestamp, x-timestamp, x-webhook-timestamp",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-webhook-token, x-webhook-secret, x-skip-automations, x-signature, x-webhook-signature, x-hub-signature-256, x-signature-256, x-checkgrow-signature, webhook-signature, webhook-id, webhook-timestamp, x-timestamp, x-webhook-timestamp",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -247,7 +251,7 @@ Deno.serve(async (req) => {
   };
 
   const externalId = take(["external_id", "lead_id", "id", "submission_id", "response_id"]);
-  let name = take(["name", "full_name", "fullname", "contact", "contact_name"]);
+  let name = take(["name", "full_name", "fullname", "contact", "contact_name", "lead", "lead_name"]);
   if (!name) {
     const first = take(["first_name", "firstname", "given_name"]);
     const last = take(["last_name", "lastname", "surname", "family_name"]);
@@ -341,7 +345,8 @@ Deno.serve(async (req) => {
     .map(([k, v]) => `${k}: ${v}`)
     .join("\n");
   const descriptionParts = [message, extras ? `Details\n${extras}` : null].filter(Boolean);
-  const title = subject || [company || name || email, "new lead"].filter(Boolean).join(" · ");
+  const campaign = pick(payload, ["campaign", "campaign_name", "form", "form_name"])?.value ?? null;
+  const title = subject || [company || name || email, campaign || "new lead"].filter(Boolean).join(" · ");
 
   const { data: deal, error: dealError } = await supabase
     .from("crm_deals")
@@ -398,7 +403,8 @@ Deno.serve(async (req) => {
   // ---- Automations: enrol the lead in every matching sequence ----
   const enrolled: string[] = [];
   let dueNow = false;
-  const { data: automations } = await supabase
+  const skipAutomations = /^(1|true|yes)$/i.test(req.headers.get("x-skip-automations") || "");
+  const { data: automations } = skipAutomations ? { data: [] } : await supabase
     .from("crm_automations")
     .select("id, trigger_type, webhook_id, conditions, steps")
     .eq("cluster_id", hook.cluster_id)

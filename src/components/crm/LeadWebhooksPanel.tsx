@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Plus, Loader2, Webhook, Copy, Check, RefreshCw, Trash2, Power, PowerOff,
-  Inbox, AlertCircle, ExternalLink, ChevronDown, ChevronRight, Code2, ShieldCheck, KeyRound,
+  Inbox, AlertCircle, ExternalLink, ChevronDown, ChevronRight, Code2, ShieldCheck, KeyRound, Upload, FileSpreadsheet,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,6 +10,7 @@ import { GlassInput } from '@/components/GlassCard';
 import { GlassButtonNew } from '@/components/ui/glass-button';
 import { GlassSelect } from '@/components/ui/glass-select';
 import { DealStage } from './types';
+import { parseCsv } from '@/lib/csv';
 
 interface LeadWebhooksPanelProps {
   clusterId: string;
@@ -40,6 +41,20 @@ interface EventRow {
   deal_id: string | null;
   created_at: string;
   crm_deals?: { id: string; title: string } | null;
+}
+
+interface ImportState {
+  webhookId: string;
+  fileName: string;
+  headers: string[];
+  rows: Record<string, string>[];
+  runAutomations: boolean;
+  status: 'preview' | 'running' | 'done';
+  done: number;
+  created: number;
+  duplicate: number;
+  failed: number;
+  errors: string[];
 }
 
 interface Member {
@@ -85,6 +100,10 @@ export function LeadWebhooksPanel({ clusterId, profileId, canManage, onOpenDeal 
   const [secretEditId, setSecretEditId] = useState<string | null>(null);
   const [secretDraft, setSecretDraft] = useState('');
   const [secretSaving, setSecretSaving] = useState(false);
+  const [importState, setImportState] = useState<ImportState | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const importTargetRef = useRef<string | null>(null);
+  const cancelImportRef = useRef(false);
 
   useEffect(() => {
     loadAll();
@@ -235,6 +254,81 @@ export function LeadWebhooksPanel({ clusterId, profileId, canManage, onOpenDeal 
     loadWebhooks();
   };
 
+  const pickImportFile = (hook: WebhookRow) => {
+    importTargetRef.current = hook.id;
+    fileInputRef.current?.click();
+  };
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    const webhookId = importTargetRef.current;
+    e.target.value = '';
+    if (!file || !webhookId) return;
+    const text = await file.text();
+    const parsed = parseCsv(text);
+    if (parsed.rows.length === 0) {
+      toast({ title: 'Nothing to import', description: 'The file has a header row but no leads.', variant: 'destructive' });
+      return;
+    }
+    setImportState({
+      webhookId, fileName: file.name, headers: parsed.headers, rows: parsed.rows,
+      runAutomations: false, status: 'preview', done: 0, created: 0, duplicate: 0, failed: 0, errors: [],
+    });
+  };
+
+  /** A stable id per CSV row so re-importing the same file does not duplicate leads. */
+  const rowExternalId = (row: Record<string, string>): string | null => {
+    const byKey = new Map(Object.entries(row).map(([k, v]) => [k.toLowerCase().replace(/[\s-]+/g, '_'), v]));
+    const explicit = ['external_id', 'lead_id', 'id', 'submission_id', 'response_id'].map(k => byKey.get(k)).find(v => v && v.trim());
+    if (explicit) return explicit.trim();
+    const email = (['email', 'email_address', 'e_mail'].map(k => byKey.get(k)).find(v => v && v.trim()) || '').trim().toLowerCase();
+    const name = (['name', 'full_name', 'lead', 'contact'].map(k => byKey.get(k)).find(v => v && v.trim()) || '').trim().toLowerCase();
+    const when = (['received', 'received_at', 'created', 'created_at', 'date', 'submitted', 'submitted_at', 'timestamp'].map(k => byKey.get(k)).find(v => v && v.trim()) || '').trim();
+    if (!email && !name) return null;
+    return `import:${email || name}:${when}`;
+  };
+
+  const runImport = async () => {
+    if (!importState) return;
+    const hook = webhooks.find(h => h.id === importState.webhookId);
+    if (!hook) return;
+    cancelImportRef.current = false;
+    setImportState(s => (s ? { ...s, status: 'running', done: 0, created: 0, duplicate: 0, failed: 0, errors: [] } : s));
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (hook.signing_secret) headers['x-webhook-secret'] = hook.signing_secret;
+    if (!importState.runAutomations) headers['x-skip-automations'] = '1';
+    const rows = importState.rows;
+    let next = 0;
+    const worker = async () => {
+      while (next < rows.length && !cancelImportRef.current) {
+        const index = next++;
+        const row = rows[index];
+        const externalId = rowExternalId(row);
+        const body: Record<string, string> = { ...row };
+        if (externalId && !Object.keys(row).some(k => /^(external_id|lead_id|id)$/i.test(k.trim()))) body.external_id = externalId;
+        let outcome: 'created' | 'duplicate' | 'failed' = 'failed';
+        let errorText = '';
+        try {
+          const res = await fetch(webhookUrl(hook.token), { method: 'POST', headers, body: JSON.stringify(body) });
+          const data = await res.json().catch(() => ({}));
+          if (res.ok) outcome = data.duplicate ? 'duplicate' : 'created';
+          else errorText = data.error || `HTTP ${res.status}`;
+        } catch (err) {
+          errorText = err instanceof Error ? err.message : 'Network error';
+        }
+        setImportState(s => {
+          if (!s) return s;
+          const errors = outcome === 'failed' && s.errors.length < 10 ? [...s.errors, `Row ${index + 2}: ${errorText}`] : s.errors;
+          return { ...s, done: s.done + 1, [outcome]: s[outcome] + 1, errors };
+        });
+      }
+    };
+    await Promise.all([worker(), worker(), worker()]);
+    setImportState(s => (s ? { ...s, status: 'done' } : s));
+    loadWebhooks();
+    if (expandedId === hook.id) loadEvents(hook.id);
+  };
+
   const copy = async (hook: WebhookRow) => {
     try {
       await navigator.clipboard.writeText(webhookUrl(hook.token));
@@ -263,6 +357,7 @@ export function LeadWebhooksPanel({ clusterId, profileId, canManage, onOpenDeal 
 
   return (
     <div className="space-y-6">
+      <input ref={fileInputRef} type="file" accept=".csv,text/csv" className="hidden" onChange={handleImportFile} />
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="glass-panel p-4">
@@ -368,6 +463,9 @@ export function LeadWebhooksPanel({ clusterId, profileId, canManage, onOpenDeal 
                         <GlassButtonNew variant="ghost" size="sm" onClick={() => handleRegenerate(hook)} leftIcon={<RefreshCw className="w-3.5 h-3.5" />}>
                           New URL
                         </GlassButtonNew>
+                        <GlassButtonNew variant="ghost" size="sm" onClick={() => pickImportFile(hook)} leftIcon={<Upload className="w-3.5 h-3.5" />} disabled={importState?.status === 'running'}>
+                          Import CSV
+                        </GlassButtonNew>
                         <GlassButtonNew variant="ghost" size="icon-sm" onClick={() => handleDelete(hook)} title="Delete webhook" className="text-muted-foreground hover:text-destructive">
                           <Trash2 className="w-3.5 h-3.5" />
                         </GlassButtonNew>
@@ -446,6 +544,57 @@ export function LeadWebhooksPanel({ clusterId, profileId, canManage, onOpenDeal 
                       </div>
                     )}
                   </div>
+
+                  {/* CSV import */}
+                  {importState?.webhookId === hook.id && (
+                    <div className="card-outlined p-4 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <FileSpreadsheet className="w-4 h-4 text-accent-foreground" />
+                        <p className="text-sm font-semibold">
+                          {importState.status === 'preview' && `Import ${importState.rows.length} lead${importState.rows.length === 1 ? '' : 's'} from ${importState.fileName}`}
+                          {importState.status === 'running' && `Importing… ${importState.done} / ${importState.rows.length}`}
+                          {importState.status === 'done' && `Import finished: ${importState.created} created, ${importState.duplicate} already existed, ${importState.failed} failed`}
+                        </p>
+                      </div>
+                      {importState.status === 'preview' && (
+                        <>
+                          <p className="text-xs text-muted-foreground">
+                            Columns found: {importState.headers.join(', ')}. Name, email, phone, company, subject, message and value are mapped automatically; everything else is kept in the lead description and available to automations. Leads with the same email are merged into one contact.
+                          </p>
+                          <label className="flex items-center gap-2 text-xs">
+                            <input type="checkbox" checked={importState.runAutomations} onChange={e => setImportState(s => (s ? { ...s, runAutomations: e.target.checked } : s))} className="rounded border-border" />
+                            Run automations for these leads (off by default, so old leads do not get welcome emails)
+                          </label>
+                          <div className="flex gap-2 justify-end">
+                            <GlassButtonNew variant="ghost" size="sm" onClick={() => setImportState(null)}>Cancel</GlassButtonNew>
+                            <GlassButtonNew variant="primary" size="sm" onClick={runImport} leftIcon={<Upload className="w-3.5 h-3.5" />}>
+                              Import {importState.rows.length} lead{importState.rows.length === 1 ? '' : 's'}
+                            </GlassButtonNew>
+                          </div>
+                        </>
+                      )}
+                      {importState.status !== 'preview' && (
+                        <div className="h-2 w-full rounded-full bg-secondary overflow-hidden">
+                          <div className="h-full bg-primary transition-all" style={{ width: `${Math.round((importState.done / Math.max(1, importState.rows.length)) * 100)}%` }} />
+                        </div>
+                      )}
+                      {importState.errors.length > 0 && (
+                        <ul className="text-xs text-destructive space-y-0.5">
+                          {importState.errors.map((err, i) => <li key={i}>{err}</li>)}
+                        </ul>
+                      )}
+                      {importState.status === 'running' && (
+                        <div className="flex justify-end">
+                          <GlassButtonNew variant="ghost" size="sm" onClick={() => { cancelImportRef.current = true; }}>Stop</GlassButtonNew>
+                        </div>
+                      )}
+                      {importState.status === 'done' && (
+                        <div className="flex justify-end">
+                          <GlassButtonNew variant="ghost" size="sm" onClick={() => setImportState(null)}>Close</GlassButtonNew>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <button
@@ -539,6 +688,7 @@ export function LeadWebhooksPanel({ clusterId, profileId, canManage, onOpenDeal 
                   <li>Wrapped payloads (<code>data</code>, <code>fields</code>, <code>answers</code>) are unwrapped automatically.</li>
                   <li>The default owner gets an in-app notification for each new lead.</li>
                   <li>Pass the token as <code>?token=</code>, an <code>x-webhook-token</code> header, or the last path segment.</li>
+                  <li>Existing leads from another tool: export them as CSV there and use <strong>Import CSV</strong> on the webhook card. Rows go through the same mapping and de-duplication.</li>
                   <li>With a signing secret set, deliveries must carry an HMAC-SHA256 of the raw body in <code>x-signature</code> (hex or base64, <code>sha256=</code>, <code>t=…,v1=…</code> and Standard Webhooks formats all work), or the secret itself in <code>x-webhook-secret</code>.</li>
                 </ul>
               </div>

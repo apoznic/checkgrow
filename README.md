@@ -108,6 +108,15 @@ Recognised fields (case-insensitive): `name` or `first_name`/`last_name`, `email
 organization; the webhook's default owner is notified in-app. The token can also be sent as an
 `x-webhook-token` header or as the last path segment.
 
+### Importing existing leads (CSV)
+
+Outbound webhooks only fire for leads created after the destination was added. For leads that
+already exist in the other tool, export them as CSV there (Checkgrow: Leads → **Export view**) and
+click **Import CSV** on the matching webhook card. Each row is posted through the same webhook
+pipeline, so it gets the same field mapping, contact matching by email and de-duplication (an
+`id`/`external_id` column is used when present, otherwise email + received date). Automations are
+skipped for imported rows unless you tick "Run automations for these leads".
+
 ### Verifying signed deliveries
 
 If the sending system gives you a signing secret (for example `lwhsec_…` from an outbound
