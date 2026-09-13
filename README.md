@@ -75,7 +75,8 @@ Edge functions in `supabase/functions`:
 | `send-announcement-emails` | Emails an announcement to all members |
 | `send-task-reminders` | Emails each member a digest of their open Members-board tasks |
 | `registry-webhook` | Public endpoint that appends rows to a registry |
-| `crm-lead-webhook` | Public endpoint that turns a POSTed lead into a CRM contact + deal |
+| `crm-lead-webhook` | Public endpoint that turns a POSTed lead into a CRM contact + deal and enrols it in matching automations |
+| `crm-automation-runner` | Executes due automation steps; woken by the database scheduler every 5 minutes, by the webhook, or from the app |
 
 Function secrets to set in the Supabase dashboard (Edge Functions → Secrets):
 
@@ -106,6 +107,23 @@ Recognised fields (case-insensitive): `name` or `first_name`/`last_name`, `email
 `answers`, `form_response`) are unwrapped. Contacts are matched by email within the
 organization; the webhook's default owner is notified in-app. The token can also be sent as an
 `x-webhook-token` header or as the last path segment.
+
+## Automations (contact loops)
+
+Automations → New automation. Pick the trigger: any inbound source or one specific webhook
+(a Meta lead form, a website form, a custom form), optionally filtered on a submitted field
+(for example `form_name equals "Pricing"`). Then add steps, each with a delay counted from the
+previous step:
+
+- **Send email** to the lead through the organization's Resend key (`{{first_name}}`,
+  `{{company}}`, `{{payload.any_field}}` and friends are replaced)
+- **Create task** for a member (or the lead owner) with a due date and priority
+- **Assign owner**, **Move stage**, **Notify member**, **Wait**
+
+Every enrolled lead is a "loop" with a live log. Zero-delay steps run immediately when the
+lead arrives; delayed steps are picked up by a `pg_cron` job that calls the runner every
+5 minutes (the shared secret lives in `automation_runner_config`, readable only by the
+scheduler and the service role). Owners and admins can cancel a loop or run its next step now.
 
 ## Design system
 

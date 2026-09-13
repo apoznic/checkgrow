@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LogOut, Users, Building2, Loader2, Plus, Home,
   Megaphone, FileText, UserCircle, TrendingUp,
-  ChevronRight, Settings, Menu, X, Shield, Linkedin, Bell, ClipboardList, Plug, Sparkles, Database
+  ChevronRight, Settings, Menu, X, Shield, Linkedin, Bell, ClipboardList, Plug, Sparkles, Database, Zap
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { NotificationBell } from '@/components/crm/NotificationBell';
@@ -24,6 +24,7 @@ import { RolePermissions } from '@/components/organization/RolePermissions';
 import { SettingsHub } from '@/components/organization/SettingsHub';
 import { MyAssignments, useAssignmentCounts } from '@/components/organization/MyAssignments';
 import { CrmTab } from '@/components/crm/CrmTab';
+import { AutomationsPanel } from '@/components/crm/AutomationsPanel';
 import { RegistryPanel } from '@/components/organization/RegistryPanel';
 
 
@@ -44,7 +45,7 @@ interface Cluster {
   category: string | null;
 }
 
-type Tab = 'overview' | 'my-assignments' | 'members' | 'announcements' | 'team' | 'deals' | 'settings' | 'permissions' | 'integrations' | 'registry';
+type Tab = 'overview' | 'my-assignments' | 'members' | 'announcements' | 'team' | 'deals' | 'automations' | 'settings' | 'permissions' | 'integrations' | 'registry';
 
 const normalizeRole = (role?: string | null) => (role || 'member').trim().toLowerCase();
 
@@ -387,6 +388,7 @@ export default function AdminDashboard() {
 
   const tabs: { id: Tab; label: string; icon: React.ElementType; section?: string; badge?: number; hidden?: boolean; glow?: boolean; highlight?: boolean }[] = [
     { id: 'deals', label: 'CRM', icon: TrendingUp, section: 'Workspace', hidden: !hasPermission('tab_deals'), highlight: true },
+    { id: 'automations', label: 'Automations', icon: Zap, section: 'Workspace', hidden: !hasPermission('tab_deals'), highlight: true },
     { id: 'team', label: 'Members', icon: Users, section: 'Workspace', highlight: true },
     { id: 'my-assignments', label: 'My Life', icon: ClipboardList, section: 'Workspace', badge: assignmentCount > 0 ? assignmentCount : undefined, glow: assignmentCount > 0, highlight: true },
     { id: 'members', label: 'Members & Skills', icon: Users, section: 'General', badge: canManageMembers && stats.pending > 0 ? stats.pending : undefined, hidden: !hasPermission('tab_members') },
@@ -421,6 +423,8 @@ export default function AdminDashboard() {
         return <OrgAnnouncements clusterId={selectedCluster} canManage={canManageAnnouncements} profileId={profileId} isOwner={effectiveRole === 'owner'} />;
       case 'team':
         return <MemberTaskBoard clusterId={selectedCluster} profileId={profileId} canManage={canManageContent} />;
+      case 'automations':
+        return <AutomationsPanel clusterId={selectedCluster} profileId={profileId} canManage={canManageContent} />;
       case 'deals':
         return <CrmTab clusterId={selectedCluster} profileId={profileId} canManage={canManageContent} userRole={selectedRole} initialDealId={deepLinkItemId} />;
       case 'registry':

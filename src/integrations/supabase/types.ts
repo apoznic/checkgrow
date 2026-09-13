@@ -258,6 +258,169 @@ export type Database = {
           },
         ]
       }
+      crm_automation_runs: {
+        Row: {
+          automation_id: string
+          cluster_id: string
+          completed_at: string | null
+          contact_id: string | null
+          context: Json
+          created_at: string
+          current_step: number
+          deal_id: string | null
+          error: string | null
+          id: string
+          log: Json
+          next_run_at: string | null
+          started_at: string
+          status: string
+          webhook_event_id: string | null
+        }
+        Insert: {
+          automation_id: string
+          cluster_id: string
+          completed_at?: string | null
+          contact_id?: string | null
+          context?: Json
+          created_at?: string
+          current_step?: number
+          deal_id?: string | null
+          error?: string | null
+          id?: string
+          log?: Json
+          next_run_at?: string | null
+          started_at?: string
+          status?: string
+          webhook_event_id?: string | null
+        }
+        Update: {
+          automation_id?: string
+          cluster_id?: string
+          completed_at?: string | null
+          contact_id?: string | null
+          context?: Json
+          created_at?: string
+          current_step?: number
+          deal_id?: string | null
+          error?: string | null
+          id?: string
+          log?: Json
+          next_run_at?: string | null
+          started_at?: string
+          status?: string
+          webhook_event_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_automation_runs_automation_id_fkey"
+            columns: ["automation_id"]
+            isOneToOne: false
+            referencedRelation: "crm_automations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_automation_runs_cluster_id_fkey"
+            columns: ["cluster_id"]
+            isOneToOne: false
+            referencedRelation: "clusters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_automation_runs_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_automation_runs_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_automation_runs_webhook_event_id_fkey"
+            columns: ["webhook_event_id"]
+            isOneToOne: false
+            referencedRelation: "crm_webhook_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_automations: {
+        Row: {
+          cluster_id: string
+          conditions: Json
+          created_at: string
+          created_by: string | null
+          description: string | null
+          enabled: boolean
+          id: string
+          last_run_at: string | null
+          name: string
+          run_count: number
+          steps: Json
+          trigger_type: string
+          updated_at: string
+          webhook_id: string | null
+        }
+        Insert: {
+          cluster_id: string
+          conditions?: Json
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          enabled?: boolean
+          id?: string
+          last_run_at?: string | null
+          name: string
+          run_count?: number
+          steps?: Json
+          trigger_type?: string
+          updated_at?: string
+          webhook_id?: string | null
+        }
+        Update: {
+          cluster_id?: string
+          conditions?: Json
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          enabled?: boolean
+          id?: string
+          last_run_at?: string | null
+          name?: string
+          run_count?: number
+          steps?: Json
+          trigger_type?: string
+          updated_at?: string
+          webhook_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_automations_cluster_id_fkey"
+            columns: ["cluster_id"]
+            isOneToOne: false
+            referencedRelation: "clusters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_automations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_automations_webhook_id_fkey"
+            columns: ["webhook_id"]
+            isOneToOne: false
+            referencedRelation: "crm_webhooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_contacts: {
         Row: {
           assigned_to: string | null
@@ -1538,6 +1701,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      bump_automation_counter: { Args: { _automation_id: string }; Returns: undefined }
       bump_webhook_counter: { Args: { _webhook_id: string }; Returns: undefined }
       current_profile_id: { Args: never; Returns: string }
       deal_cluster: { Args: { _deal_id: string }; Returns: string }
