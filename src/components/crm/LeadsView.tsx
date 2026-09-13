@@ -54,7 +54,7 @@ const STAGES: { value: string; label: string; chip: string }[] = [
 ];
 const stageMeta = (s: string) => STAGES.find(x => x.value === s) || { value: s, label: s, chip: 'bg-secondary text-muted-foreground' };
 
-const COLUMN_WIDTH: Record<ColumnKey, number> = { lead: 20, contact: 20, title: 16, source: 10, campaign: 15, form: 11, ad: 11, stage: 10, owner: 11, value: 7, received: 9, updated: 8 };
+const COLUMN_WIDTH: Record<ColumnKey, number> = { lead: 18, contact: 18, title: 16, source: 10, campaign: 15, form: 11, ad: 11, stage: 9, owner: 13, value: 6, received: 9, updated: 8 };
 
 const COLUMNS: { key: ColumnKey; label: string; sort?: SortKey; defaultOn: boolean }[] = [
   { key: 'lead', label: 'Lead', sort: 'lead', defaultOn: true },
